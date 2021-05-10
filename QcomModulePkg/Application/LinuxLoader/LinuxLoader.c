@@ -48,6 +48,11 @@
 #include <Library/HypervisorMvCalls.h>
 #include <Library/UpdateCmdLine.h>
 
+// FP4-263, innproduct flag, liquan.zhou.t2m, 20210509.
+// Task: 9949950
+inproductflag_info_t OemInproductFlagInternal = {0};
+const inproductflag_info_t * const OemInproductFlag = &OemInproductFlagInternal;
+
 #define MAX_APP_STR_LEN 64
 #define MAX_NUM_FS 10
 #define DEFAULT_STACK_CHK_GUARD 0xc0c0c0c0
@@ -155,6 +160,146 @@ WaitForDisplayCompletion (VOID)
 }
 #endif
 
+//+ FP4-263, innproduct flag, liquan.zhou.t2m, 20210509.
+
+
+// Task: 9820238
+STATIC
+EFI_STATUS
+PartitionGetInfo (IN CONST CHAR16 *PartitionName,
+                  OUT EFI_BLOCK_IO_PROTOCOL **BlockIo,
+                  OUT EFI_HANDLE **Handle)
+{
+  EFI_STATUS Status;
+  EFI_PARTITION_ENTRY *PartEntry;
+  UINT16 i;
+  UINT32 j;
+  /* By default the LunStart and LunEnd would point to '0' and max value */
+  UINT32 LunStart = 0;
+  UINT32 LunEnd = GetMaxLuns ();
+
+  for (i = LunStart; i < LunEnd; i++) {
+    for (j = 0; j < Ptable[i].MaxHandles; j++) {
+      Status =
+          gBS->HandleProtocol (Ptable[i].HandleInfoList[j].Handle,
+                               &gEfiPartitionRecordGuid, (VOID **)&PartEntry);
+      if (EFI_ERROR (Status)) {
+        continue;
+      }
+      if (!(StrCmp (PartitionName, PartEntry->PartitionName))) {
+        *BlockIo = Ptable[i].HandleInfoList[j].BlkIo;
+        *Handle = Ptable[i].HandleInfoList[j].Handle;
+        return Status;
+      }
+    }
+  }
+
+  DEBUG ((EFI_D_ERROR, "Partition not found : %s\n", PartitionName));
+  return EFI_NOT_FOUND;
+}
+
+
+STATIC
+UINT16
+CalculateCrc16 (
+  IN UINT8   *Data,
+  IN UINTN   DataSize,
+  IN UINT16  Crc
+  )
+{
+  UINTN  Index;
+  UINTN  BitIndex;
+
+  for (Index = 0; Index < DataSize; Index++) {
+    Crc ^= (UINT16)Data[Index];
+    for (BitIndex = 0; BitIndex < 8; BitIndex++) {
+      if ((Crc & 0x8000) != 0) {
+        Crc <<= 1;
+        Crc ^= 0x1021;
+      } else {
+        Crc <<= 1;
+      }
+    }
+  }
+  return Crc;
+}
+
+// Task: 9949950
+STATIC
+EFI_STATUS
+OembinInproductFlagRead(inproductflag_info_t *Inproductflag,
+        EFI_BLOCK_IO_PROTOCOL *BlockIo)
+{
+  EFI_STATUS Status;
+  UINT32 DataOffset = 4096 / BlockIo->Media->BlockSize;
+  UINT64 BuffSize = ROUND_TO_PAGE (sizeof(inproductflag_info_t), BlockIo->Media->BlockSize - 1);
+  inproductflag_info_t *Buff = AllocateZeroPool (BuffSize);
+  UINT16 Checksum = 0;
+  if (!Buff) {
+    DEBUG ((EFI_D_ERROR, "Error allocating memory for reading inproductflag\n"));
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  DEBUG ((EFI_D_INFO, "Inproduction flag start loading.\n"));
+  Status = BlockIo->ReadBlocks (BlockIo, BlockIo->Media->MediaId,
+                  DataOffset, BuffSize, (VOID *) Buff);
+
+  if (Status == EFI_SUCCESS) {
+    memcpy(Inproductflag, Buff, sizeof(inproductflag_info_t));
+    Checksum = Inproductflag->CHECKSUM;
+    Inproductflag->CHECKSUM = 0;
+    if (Checksum != CalculateCrc16 ((UINT8 *)Inproductflag,
+                                        sizeof(inproductflag_info_t), 0)) {
+      Status = EFI_LOAD_ERROR;
+      DEBUG ((EFI_D_ERROR, "Inproduction flag data checksum error.\n"));
+    }
+  }
+  FreePool (Buff);
+
+  if (Status == EFI_SUCCESS) {
+    Status = (Inproductflag->MAGIC == INPRODUCT_STRUCT_MAGIC) ?
+                EFI_SUCCESS : EFI_LOAD_ERROR;
+  }
+
+  if (Status != EFI_SUCCESS) {
+    memset(Inproductflag, 0, sizeof(inproductflag_info_t));
+    DEBUG ((EFI_D_ERROR, "Oem inproductflag rest for error %d.\n", Status));
+  }
+
+  return Status;
+}
+
+STATIC
+EFI_STATUS
+GetOembinPartitionInfo ()
+{
+  EFI_STATUS Status;
+  EFI_BLOCK_IO_PROTOCOL *BlockIo = NULL;
+  EFI_HANDLE *Handle = NULL;
+  CONST CHAR16 *PartitionName = L"oembin";
+
+  Status = PartitionGetInfo (PartitionName, &BlockIo, &Handle);
+  if (Status != EFI_SUCCESS) {
+    return Status;
+  }
+  if (!BlockIo) {
+    DEBUG ((EFI_D_ERROR, "BlockIo for %s is corrupted\n", PartitionName));
+    return EFI_VOLUME_CORRUPTED;
+  }
+  if (!Handle) {
+    DEBUG ((EFI_D_ERROR, "EFI handle for %s is corrupted\n", PartitionName));
+    return EFI_VOLUME_CORRUPTED;
+  }
+
+  // Task: 9949950
+  OembinInproductFlagRead (&OemInproductFlagInternal, BlockIo);
+
+  return Status;
+}
+
+//- FP4-263, innproduct flag, liquan.zhou.t2m, 20210509.
+
+
 /**
   Linux Loader Application EntryPoint
 
@@ -216,6 +361,9 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
     DEBUG ((EFI_D_VERBOSE, "Multi Slot boot is supported\n"));
     FindPtnActiveSlot ();
   }
+
+  //FP4-263, innproduct flag, liquan.zhou.t2m, 20210509.
+  GetOembinPartitionInfo ();
 
   Status = GetKeyPress (&KeyPressed);
   if (Status == EFI_SUCCESS) {

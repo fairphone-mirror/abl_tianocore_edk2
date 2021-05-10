@@ -81,6 +81,10 @@ STATIC CONST CHAR8 *AndroidBootFstabSuffix =
 STATIC CHAR8 *FstabSuffixEmmc = "emmc";
 STATIC CHAR8 *FstabSuffixDefault = "default";
 
+// FP4-263, innproduct flag, liquan.zhou.t2m, 20210509.
+// Task: 9949950
+STATIC CONST CHAR8 *InproductFlagCmdLine = " androidboot.inproductionflag=true";
+
 EFI_STATUS
 TargetPauseForBatteryCharge (BOOLEAN *BatteryStatus)
 {
@@ -549,6 +553,14 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
     Param->LEVerityCmdLine = NULL;
   }
 
+
+  // FP4-263, innproduct flag, liquan.zhou.t2m, 20210509.
+  // Task: 9949950
+  if (OemInproductFlag->inproductionflag == 1) {
+    Src = InproductFlagCmdLine;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  }
+
   return EFI_SUCCESS;
 }
 
@@ -737,6 +749,12 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
   }
   CmdLineLen += AsciiStrLen (Param.FstabSuffix);
   Param.AndroidBootFstabSuffix = AndroidBootFstabSuffix;
+
+  // FP4-263, innproduct flag, liquan.zhou.t2m, 20210509.
+  // Task: 9949950
+  if (OemInproductFlag->inproductionflag == 1) {
+    CmdLineLen += AsciiStrLen (InproductFlagCmdLine);
+  }
 
   /* 1 extra byte for NULL */
   CmdLineLen += 1;
