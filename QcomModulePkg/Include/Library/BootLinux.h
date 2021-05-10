@@ -74,6 +74,7 @@
 #include "UpdateCmdLine.h"
 #include "UpdateDeviceTree.h"
 #include "VerifiedBoot.h"
+#include "token_struct.h"
 
 #define ALIGN32_BELOW(addr) ALIGN_POINTER (addr - 32, 32)
 #define LOCAL_ROUND_TO_PAGE(x, y) (((x) + (y - 1)) & (~(y - 1)))
@@ -94,6 +95,8 @@
 
 #define KERNEL_32BIT_LOAD_OFFSET 0x8000
 #define KERNEL_64BIT_LOAD_OFFSET 0x80000
+
+extern const inproductflag_info_t * const OemInproductFlag;
 
 typedef enum {
   KERNEL_32BIT = 0,

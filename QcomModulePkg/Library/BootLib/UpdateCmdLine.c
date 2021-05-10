@@ -83,6 +83,8 @@ STATIC CHAR8 *FstabSuffixDefault = "default";
 #define MAX_SOFTSKU_IDX_STR 23
 STATIC CHAR8 *SoftSkuIdxStr = " socinfo.softsku_idx=";
 
+STATIC CONST CHAR8 *InproductFlagCmdLine = " androidboot.inproductionflag=true";
+
 EFI_STATUS
 TargetPauseForBatteryCharge (BOOLEAN *BatteryStatus)
 {
@@ -555,6 +557,12 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
     Src = Param->SoftSkuStr;
     AsciiStrCatS (Dst, MaxCmdLineLen, Src);
   }
+
+  if (OemInproductFlag->inproductionflag == 1) {
+    Src = InproductFlagCmdLine;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  }
+
   return EFI_SUCCESS;
 }
 
@@ -752,6 +760,11 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
                    "%a%d", SoftSkuIdxStr , SkuIdx);
       CmdLineLen += AsciiStrLen (SoftSkuStr);
   }
+
+  if (OemInproductFlag->inproductionflag == 1) {
+    CmdLineLen += AsciiStrLen (InproductFlagCmdLine);
+  }
+
   /* 1 extra byte for NULL */
   CmdLineLen += 1;
 
