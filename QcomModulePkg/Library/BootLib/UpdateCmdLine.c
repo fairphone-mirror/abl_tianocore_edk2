@@ -666,9 +666,18 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
     CmdLineLen += AsciiStrLen (FfbmStr);
     /* reduce kernel console messages to speed-up boot */
     CmdLineLen += AsciiStrLen (LogLevel);
+
+/*zxzadd for power off charge enable, if in mini software, need add the macro FEATURE_DISABLE_CHARGING_MMI in
+QcomModulePkg.dsc  !if $(TARGET_BUILD_MMITEST) -DFEATURE_DISABLE_CHARGING_MMI;
+Define  TARGET_BUILD_MMITEST in AndroidBoot.mk and makefile
+*/
+#ifndef FEATURE_DISABLE_CHARGING_MMI
+  } else if (BatteryStatus && !Recovery) {
+#else
   } else if (BatteryStatus &&
              IsChargingScreenEnable () &&
              !Recovery) {
+#endif
     DEBUG ((EFI_D_INFO, "Device will boot into off mode charging mode\n"));
     PauseAtBootUp = 1;
     CmdLineLen += AsciiStrLen (BatteryChgPause);
