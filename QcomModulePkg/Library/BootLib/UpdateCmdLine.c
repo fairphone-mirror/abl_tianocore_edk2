@@ -670,9 +670,14 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
     CmdLineLen += AsciiStrLen (FfbmStr);
     /* reduce kernel console messages to speed-up boot */
     CmdLineLen += AsciiStrLen (LogLevel);
+#ifndef FEATURE_DISABLE_CHARGING_MMI
+  } else if (BatteryStatus &&
+             !Recovery) {
+#else
   } else if (BatteryStatus &&
              IsChargingScreenEnable () &&
              !Recovery) {
+#endif
     DEBUG ((EFI_D_INFO, "Device will boot into off mode charging mode\n"));
     PauseAtBootUp = 1;
     CmdLineLen += AsciiStrLen (BatteryChgPause);
