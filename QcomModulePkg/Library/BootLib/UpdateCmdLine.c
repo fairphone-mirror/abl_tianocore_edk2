@@ -46,6 +46,7 @@
 #include "UpdateCmdLine.h"
 #include "Recovery.h"
 #include "LECmdLine.h"
+#include <fpconfig_persist.h>
 
 STATIC CONST CHAR8 *DynamicBootDeviceCmdLine =
                                       " androidboot.boot_devices=soc/";
@@ -84,6 +85,9 @@ STATIC CHAR8 *FstabSuffixDefault = "default";
 STATIC CHAR8 *SoftSkuIdxStr = " socinfo.softsku_idx=";
 
 STATIC CONST CHAR8 *InproductFlagCmdLine = " androidboot.inproductionflag=true";
+
+STATIC CONST CHAR8 *FPCustomId= " androidboot.CID=";
+extern FPConfig_t FPConfig;
 
 EFI_STATUS
 TargetPauseForBatteryCharge (BOOLEAN *BatteryStatus)
@@ -563,6 +567,13 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
     AsciiStrCatS (Dst, MaxCmdLineLen, Src);
   }
 
+  if (AsciiStrLen(FPConfig.cid) >= 0) {
+    Src = FPCustomId;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+    Src = FPConfig.cid;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  }
+
   return EFI_SUCCESS;
 }
 
@@ -768,6 +779,11 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
 
   if (OemInproductFlag->inproductionflag == 1) {
     CmdLineLen += AsciiStrLen (InproductFlagCmdLine);
+  }
+
+  if (AsciiStrLen(FPConfig.cid) >= 0) {
+    CmdLineLen += AsciiStrLen (FPCustomId);
+    CmdLineLen += AsciiStrLen (FPConfig.cid);
   }
 
   /* 1 extra byte for NULL */

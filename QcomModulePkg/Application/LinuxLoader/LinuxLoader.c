@@ -47,9 +47,12 @@
 #include "Library/ThreadStack.h"
 #include <Library/HypervisorMvCalls.h>
 #include <Library/UpdateCmdLine.h>
+#include <Library/fpconfig_persist.h>
 
 inproductflag_info_t OemInproductFlagInternal = {0};
 const inproductflag_info_t * const OemInproductFlag = &OemInproductFlagInternal;
+
+FPConfig_t FPConfig = {0};
 
 #define MAX_APP_STR_LEN 64
 #define MAX_NUM_FS 10
@@ -288,6 +291,63 @@ GetOembinPartitionInfo ()
   return Status;
 }
 
+STATIC
+EFI_STATUS
+GetFPConfigPartitionInfo ()
+{
+  EFI_STATUS Status;
+  EFI_BLOCK_IO_PROTOCOL *BlockIo = NULL;
+  EFI_HANDLE *Handle = NULL;
+  CONST CHAR16 *PartitionName = L"fpconfig_persist";
+
+  Status = PartitionGetInfo (PartitionName, &BlockIo, &Handle);
+  if (Status != EFI_SUCCESS) {
+    return Status;
+  }
+  if (!BlockIo) {
+    DEBUG ((EFI_D_ERROR, "BlockIo for %s is corrupted\n", PartitionName));
+    return EFI_VOLUME_CORRUPTED;
+  }
+  if (!Handle) {
+    DEBUG ((EFI_D_ERROR, "EFI handle for %s is corrupted\n", PartitionName));
+    return EFI_VOLUME_CORRUPTED;
+  }
+
+  UINT32 DataOffset = 0 / BlockIo->Media->BlockSize;
+  UINT64 BuffSize = ROUND_TO_PAGE (sizeof(FPConfig_t), BlockIo->Media->BlockSize - 1);
+  FPConfig_t *Buff = AllocateZeroPool (BuffSize);
+
+  if (!Buff) {
+    DEBUG ((EFI_D_ERROR, "Error allocating memory for reading inproductflag\n"));
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  DEBUG ((EFI_D_INFO, "fpconfig start loading.\n"));
+  Status = BlockIo->ReadBlocks (BlockIo, BlockIo->Media->MediaId,
+                  DataOffset, BuffSize, (VOID *) Buff);
+
+  if (Status == EFI_SUCCESS) {
+    if (CompareMem (Buff->magic, FPCONFIG_MAGIC, FPCONFIG_MAGIC_SIZE)) {
+      DEBUG ((EFI_D_ERROR, "fpconfig Magic does not match\n"));
+      gBS->SetMem (Buff, sizeof (BuffSize), 0);
+      gBS->CopyMem (Buff->magic, FPCONFIG_MAGIC, FPCONFIG_MAGIC_SIZE);
+      gBS->CopyMem (Buff->cid, "STD", FPCONFIG_CID_SIZE);
+      Status = BlockIo->WriteBlocks (BlockIo, BlockIo->Media->MediaId,
+                  DataOffset, BuffSize, (VOID *) Buff);
+      if (Status == EFI_SUCCESS) {
+        DEBUG ((EFI_D_INFO, "fpconfig init success\n"));
+      }
+    }
+  } else {
+    DEBUG ((EFI_D_ERROR, "fpconfig loading error\n"));
+  }
+  memcpy(&FPConfig, Buff, sizeof(FPConfig_t));
+
+  FreePool (Buff);
+
+  return Status;
+}
+
 /**
   Linux Loader Application EntryPoint
 
@@ -351,6 +411,8 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
   }
 
   GetOembinPartitionInfo ();
+
+  GetFPConfigPartitionInfo();
 
   Status = GetKeyPress (&KeyPressed);
   if (Status == EFI_SUCCESS) {
