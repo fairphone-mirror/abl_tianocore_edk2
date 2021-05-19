@@ -46,6 +46,7 @@
 #include "UpdateCmdLine.h"
 #include "Recovery.h"
 #include "LECmdLine.h"
+#include <fpconfig_persist.h>
 
 STATIC CONST CHAR8 *DynamicBootDeviceCmdLine =
                                       " androidboot.boot_devices=soc/";
@@ -84,6 +85,11 @@ STATIC CHAR8 *FstabSuffixDefault = "default";
 // FP4-263, innproduct flag, liquan.zhou.t2m, 20210509.
 // Task: 9949950
 STATIC CONST CHAR8 *InproductFlagCmdLine = " androidboot.inproductionflag=true";
+
+//+FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+STATIC CONST CHAR8 *FPCustomId= " androidboot.CID=";
+extern FPConfig_t FPConfig;
+//-FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
 
 EFI_STATUS
 TargetPauseForBatteryCharge (BOOLEAN *BatteryStatus)
@@ -561,6 +567,15 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
     AsciiStrCatS (Dst, MaxCmdLineLen, Src);
   }
 
+  //+FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+  if (AsciiStrLen(FPConfig.cid) >= 0) {
+    Src = FPCustomId;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+    Src = FPConfig.cid;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  }
+  //-FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+
   return EFI_SUCCESS;
 }
 
@@ -763,6 +778,12 @@ Define  TARGET_BUILD_MMITEST in AndroidBoot.mk and makefile
   // Task: 9949950
   if (OemInproductFlag->inproductionflag == 1) {
     CmdLineLen += AsciiStrLen (InproductFlagCmdLine);
+  }
+
+  //FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+  if (AsciiStrLen(FPConfig.cid) >= 0) {
+    CmdLineLen += AsciiStrLen (FPCustomId);
+    CmdLineLen += AsciiStrLen (FPConfig.cid);
   }
 
   /* 1 extra byte for NULL */
