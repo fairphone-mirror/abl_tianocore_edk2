@@ -89,6 +89,25 @@ STATIC CONST CHAR8 *InproductFlagCmdLine = " androidboot.inproductionflag=true";
 STATIC CONST CHAR8 *FPCustomId= " androidboot.CID=";
 extern FPConfig_t FPConfig;
 
+STATIC CHAR8 WifiMac[27] = {0};
+extern CHAR8 TraceabilityInfo[512];
+
+STATIC EFI_STATUS
+SetWifiMac (CHAR8 *Buffer)
+{
+  AsciiSPrint (WifiMac, 27, " WifiMac=%02x:%02x:%02x:%02x:%02x:%02x",
+               (unsigned char)Buffer[62], (unsigned char)Buffer[61],
+               (unsigned char)Buffer[60], (unsigned char)Buffer[59],
+               (unsigned char)Buffer[58], (unsigned char)Buffer[57]);
+
+  DEBUG ((EFI_D_ERROR,"WifiMac=%02x:%02x:%02x:%02x:%02x:%02x\n",
+         (unsigned char)Buffer[62], (unsigned char)Buffer[61],
+         (unsigned char)Buffer[60], (unsigned char)Buffer[59],
+         (unsigned char)Buffer[58], (unsigned char)Buffer[57]));
+
+  return 0;
+}
+
 EFI_STATUS
 TargetPauseForBatteryCharge (BOOLEAN *BatteryStatus)
 {
@@ -574,6 +593,9 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
     AsciiStrCatS (Dst, MaxCmdLineLen, Src);
   }
 
+  Src = WifiMac;
+  AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+
   return EFI_SUCCESS;
 }
 
@@ -785,6 +807,9 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
     CmdLineLen += AsciiStrLen (FPCustomId);
     CmdLineLen += AsciiStrLen (FPConfig.cid);
   }
+
+  SetWifiMac (TraceabilityInfo);
+  CmdLineLen += AsciiStrLen (WifiMac);
 
   /* 1 extra byte for NULL */
   CmdLineLen += 1;
