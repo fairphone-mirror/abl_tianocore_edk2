@@ -91,6 +91,27 @@ STATIC CONST CHAR8 *FPCustomId= " androidboot.CID=";
 extern FPConfig_t FPConfig;
 //-FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
 
+//+FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+STATIC CHAR8 WifiMac[27] = {0};
+extern CHAR8 TraceabilityInfo[512];
+//-FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+
+
+//FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+STATIC EFI_STATUS SetWifiMac( CHAR8  *Buffer)
+{
+    AsciiSPrint(WifiMac, 27, " WifiMac=%02x:%02x:%02x:%02x:%02x:%02x",
+        (unsigned char)Buffer[62],(unsigned char)Buffer[61],
+        (unsigned char)Buffer[60],(unsigned char)Buffer[59],
+        (unsigned char)Buffer[58],(unsigned char)Buffer[57]);
+
+    DEBUG((EFI_D_ERROR,"WifiMac=%02x:%02x:%02x:%02x:%02x:%02x\n",
+        (unsigned char)Buffer[62],(unsigned char)Buffer[61],
+        (unsigned char)Buffer[60],(unsigned char)Buffer[59],
+        (unsigned char)Buffer[58],(unsigned char)Buffer[57]));
+    return  0;
+}
+
 EFI_STATUS
 TargetPauseForBatteryCharge (BOOLEAN *BatteryStatus)
 {
@@ -576,6 +597,11 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
   }
   //-FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
 
+  //+FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+  Src = WifiMac;
+  AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  //-FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+
   return EFI_SUCCESS;
 }
 
@@ -785,6 +811,10 @@ Define  TARGET_BUILD_MMITEST in AndroidBoot.mk and makefile
     CmdLineLen += AsciiStrLen (FPCustomId);
     CmdLineLen += AsciiStrLen (FPConfig.cid);
   }
+
+  //FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+  SetWifiMac(TraceabilityInfo);
+  CmdLineLen += AsciiStrLen (WifiMac);
 
   /* 1 extra byte for NULL */
   CmdLineLen += 1;

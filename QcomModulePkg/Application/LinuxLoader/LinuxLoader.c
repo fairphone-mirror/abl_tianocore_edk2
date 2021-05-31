@@ -57,6 +57,9 @@ const inproductflag_info_t * const OemInproductFlag = &OemInproductFlagInternal;
 //FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
 FPConfig_t FPConfig = {0};
 
+//FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+CHAR8 TraceabilityInfo[512] = {0};
+
 #define MAX_APP_STR_LEN 64
 #define MAX_NUM_FS 10
 #define DEFAULT_STACK_CHK_GUARD 0xc0c0c0c0
@@ -364,6 +367,56 @@ GetFPConfigPartitionInfo ()
 //-FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
 
 
+//+FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+STATIC
+EFI_STATUS
+GetTraceabilityPartitionInfo ()
+{
+  EFI_STATUS Status;
+  EFI_BLOCK_IO_PROTOCOL *BlockIo = NULL;
+  EFI_HANDLE *Handle = NULL;
+  CONST CHAR16 *PartitionName = L"traceability";
+
+  Status = PartitionGetInfo (PartitionName, &BlockIo, &Handle);
+  if (Status != EFI_SUCCESS) {
+    return Status;
+  }
+  if (!BlockIo) {
+    DEBUG ((EFI_D_ERROR, "BlockIo for %s is corrupted\n", PartitionName));
+    return EFI_VOLUME_CORRUPTED;
+  }
+  if (!Handle) {
+    DEBUG ((EFI_D_ERROR, "EFI handle for %s is corrupted\n", PartitionName));
+    return EFI_VOLUME_CORRUPTED;
+  }
+
+  UINT32 DataOffset = 0 / BlockIo->Media->BlockSize;
+  UINT64 BuffSize = ROUND_TO_PAGE (sizeof(TraceabilityInfo), BlockIo->Media->BlockSize - 1);
+  FPConfig_t *Buff = AllocateZeroPool (BuffSize);
+
+  if (!Buff) {
+    DEBUG ((EFI_D_ERROR, "Error allocating memory for reading inproductflag\n"));
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  DEBUG ((EFI_D_INFO, "traceability start loading.\n"));
+  Status = BlockIo->ReadBlocks (BlockIo, BlockIo->Media->MediaId,
+                  DataOffset, BuffSize, (VOID *) Buff);
+
+  if (Status == EFI_SUCCESS) {
+    memcpy(&TraceabilityInfo, Buff, sizeof(TraceabilityInfo));
+  } else {
+    DEBUG ((EFI_D_ERROR, "fpconfig loading error\n"));
+  }
+
+  FreePool (Buff);
+
+  return Status;
+}
+//-FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+
+
+
 /**
   Linux Loader Application EntryPoint
 
@@ -431,6 +484,9 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 
   //FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
   GetFPConfigPartitionInfo();
+
+  //FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+  GetTraceabilityPartitionInfo();
 
   Status = GetKeyPress (&KeyPressed);
   if (Status == EFI_SUCCESS) {
