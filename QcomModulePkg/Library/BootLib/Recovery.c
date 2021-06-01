@@ -401,3 +401,41 @@ GetFfbmCommand (CHAR8 *FfbmString, UINT32 Sz)
 
   return Status;
 }
+
+//+FP4-492, root for user, liquan.zhou.t2m, 20210531
+EFI_STATUS
+IsBootIntoDebug ()
+{
+  CONST CHAR8 *DebugCmd = DEBUG_CMD;
+  CHAR8 *DebugData = NULL;
+  EFI_STATUS Status;
+  EFI_GUID Ptype = gEfiMiscPartitionGuid;
+  MemCardType CardType = UNKNOWN;
+
+  CardType = CheckRootDeviceType ();
+  if (CardType == NAND) {
+    Status = GetNandMiscPartiGuid (&Ptype);
+    if (Status != EFI_SUCCESS) {
+      return Status;
+    }
+  }
+
+  Status = ReadFromPartition (&Ptype, (VOID **)&DebugData, AsciiStrLen (DebugCmd));
+  if (Status != EFI_SUCCESS) {
+    DEBUG ((EFI_D_ERROR, "Error Reading Debug info from misc: %r\n", Status));
+    return Status;
+  }
+
+  DebugData[AsciiStrLen (DebugCmd)] = '\0';
+  if (!AsciiStrnCmp (DebugData, DebugCmd, AsciiStrLen (DebugCmd))) {
+    Status = EFI_SUCCESS;
+  } else {
+    Status = EFI_NOT_FOUND;
+  }
+
+  FreePool (DebugData);
+  DebugData = NULL;
+
+  return Status;
+}
+//-

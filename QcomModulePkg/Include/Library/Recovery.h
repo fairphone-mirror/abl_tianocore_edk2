@@ -36,6 +36,9 @@
 #define RECOVERY_BOOT_RECOVERY "boot-recovery"
 #define RECOVERY_BOOT_FASTBOOT "boot-fastboot"
 
+//FP4-492, root for user, liquan.zhou.t2m, 20210531
+#define DEBUG_CMD "debug-"
+
 /* Recovery Message */
 struct RecoveryMessage {
   CHAR8 command[32];
@@ -92,4 +95,9 @@ EFI_STATUS
 SetSnapshotMergeStatus (VirtualAbMergeStatus MergeStatus);
 EFI_STATUS
 ReadFromPartition (EFI_GUID *Ptype, VOID **Msg, UINT32 Size);
+
+//FP4-492, root for user, liquan.zhou.t2m, 20210531
+EFI_STATUS
+IsBootIntoDebug ();
+
 #endif

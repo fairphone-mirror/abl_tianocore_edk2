@@ -96,6 +96,10 @@ STATIC CHAR8 WifiMac[27] = {0};
 extern CHAR8 TraceabilityInfo[512];
 //-FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
 
+//+FP4-492, root for user, liquan.zhou.t2m, 20210531
+STATIC CONST CHAR8 *T2MDebugFlag = " androidboot.t2mdebugflag=true";
+EFI_STATUS HasT2MDebugFlag;
+//-FP4-492, root for user, liquan.zhou.t2m, 20210531
 
 //FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
 STATIC EFI_STATUS SetWifiMac( CHAR8  *Buffer)
@@ -602,6 +606,13 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
   AsciiStrCatS (Dst, MaxCmdLineLen, Src);
   //-FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
 
+  //+FP4-492, root for user, liquan.zhou.t2m, 20210531
+  if (HasT2MDebugFlag == EFI_SUCCESS) {
+    Src = T2MDebugFlag;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  }
+  //-FP4-492, root for user, liquan.zhou.t2m, 20210531
+
   return EFI_SUCCESS;
 }
 
@@ -815,6 +826,13 @@ Define  TARGET_BUILD_MMITEST in AndroidBoot.mk and makefile
   //FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
   SetWifiMac(TraceabilityInfo);
   CmdLineLen += AsciiStrLen (WifiMac);
+
+  //FP4-492, root for user, liquan.zhou.t2m, 20210531
+  HasT2MDebugFlag = IsBootIntoDebug();
+  if (HasT2MDebugFlag == EFI_SUCCESS) {
+    DEBUG ((EFI_D_VERBOSE, "T2M Debug cookie found.\n"));
+    CmdLineLen += AsciiStrLen (T2MDebugFlag);
+  }
 
   /* 1 extra byte for NULL */
   CmdLineLen += 1;

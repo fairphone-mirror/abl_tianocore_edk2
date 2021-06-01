@@ -2561,6 +2561,34 @@ CmdReboot (IN CONST CHAR8 *arg, IN VOID *data, IN UINT32 sz)
   FastbootFail ("Failed to reboot");
 }
 
+//+FP4-492, root for user, liquan.zhou.t2m, 20210531
+STATIC VOID
+CmdEnableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  Status = WriteRecoveryMessage (DEBUG_CMD);
+  if (Status != EFI_SUCCESS) {
+    FastbootFail ("Failed to switch to debug mode");
+    return;
+  }
+  FastbootOkay ("");
+}
+
+STATIC VOID
+CmdDisableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  Status = WriteRecoveryMessage ("");
+  if (Status != EFI_SUCCESS) {
+    FastbootFail ("Failed to close to debug mode");
+    return;
+  }
+  FastbootOkay ("");
+}
+//-FP4-492, root for user, liquan.zhou.t2m, 20210531
+
 #if DYNAMIC_PARTITION_SUPPORT
 STATIC VOID
 CmdRebootRecovery (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
@@ -3702,6 +3730,10 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
 #ifdef DYNAMIC_PARTITION_SUPPORT
       {"reboot-recovery", CmdRebootRecovery},
       {"reboot-fastboot", CmdRebootFastboot},
+      //+FP4-492, root for user, liquan.zhou.t2m, 20210531
+      {"oem enable-root", CmdEnableDebug},
+      {"oem disable-root", CmdDisableDebug},
+      //-FP4-492, root for user, liquan.zhou.t2m, 20210531
 #ifdef VIRTUAL_AB_OTA
       {"snapshot-update", CmdUpdateSnapshot},
 #endif
