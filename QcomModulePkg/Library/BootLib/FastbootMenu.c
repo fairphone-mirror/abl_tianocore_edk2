@@ -165,7 +165,7 @@ EFI_STATUS
 UpdateFastbootOptionItem (UINT32 OptionItem, UINT32 *pLocation)
 {
   EFI_STATUS Status = EFI_SUCCESS;
-  UINT32 Location = 0;
+  UINT32 Location = 45;
   UINT32 Height = 0;
   MENU_MSG_INFO *FastbootLineInfo = NULL;
 
