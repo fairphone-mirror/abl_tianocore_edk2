@@ -89,6 +89,9 @@ INT32
 dev_tree_add_mem_infoV64 (VOID *fdt, UINT32 offset, UINT64 addr, UINT64 size);
 
 EFI_STATUS
+GetDdrManufacturer(UINT8 *manufacturer_id);
+
+EFI_STATUS
 UpdateDeviceTree (VOID *DeviceTreeLoadAddr,
                   CONST CHAR8 *CmdLine,
                   VOID *RamDiskLoadAddr,

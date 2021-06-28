@@ -30,7 +30,7 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DeviceInfo.h>
-#include <Library/DrawUI.h>
+//#include <Library/DrawUI.h>
 #include <Library/FastbootMenu.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/MenuKeysDetection.h>
@@ -145,6 +145,20 @@ STATIC MENU_MSG_INFO mFastbootCommonMsgInfo[] = {
      COMMON,
      0,
      NOACTION},
+     {{"INTERNAL STORAGE SIZE - "},
+     COMMON_FACTOR,
+     BGR_WHITE,
+     BGR_BLACK,
+     COMMON,
+     0,
+     NOACTION},
+    {{"MAIN MEMORY SIZE AND VENDOR - "},
+     COMMON_FACTOR,
+     BGR_WHITE,
+     BGR_BLACK,
+     COMMON,
+     0,
+     NOACTION},
     {{"DEVICE STATE - "},
      COMMON_FACTOR,
      BGR_RED,
@@ -152,6 +166,7 @@ STATIC MENU_MSG_INFO mFastbootCommonMsgInfo[] = {
      COMMON,
      0,
      NOACTION},
+
 };
 
 /**
@@ -205,7 +220,6 @@ Exit:
 
   return Status;
 }
-
 /**
   Draw the fastboot menu
   @param[out] OptionMenuInfo  Fastboot option info
@@ -294,7 +308,31 @@ FastbootMenuShowScreen (OPTION_MENU_INFO *OptionMenuInfo)
           IsSecureBootEnabled () ? "yes" : "no",
           IsSecureBootEnabled () ? AsciiStrLen ("yes") : AsciiStrLen ("no"));
       break;
-    case 8:
+
+	case 8:
+	/*Get Internal storage size*/
+	  ZeroMem (StrTemp, sizeof (StrTemp));
+	  GetRomstorageSize(StrTemp,MAX_RSP_SIZE);
+      AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+                     sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp,
+                     sizeof (StrTemp));
+	  break;
+	case 9:
+	/*Get Main memory size and vendor*/
+	   ZeroMem (StrTemp, sizeof (StrTemp));
+	   GetRamstorageSize(StrTemp,MAX_RSP_SIZE);
+	   GetDdrManufacturerid(StrTemp1, sizeof (StrTemp1));
+	   AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+					  sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp,
+					  sizeof (StrTemp));
+	   AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+					  sizeof (mFastbootCommonMsgInfo[i].Msg), " ",
+					  sizeof (" "));
+	   AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+					  sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp1,
+					  sizeof (StrTemp1));
+		break;
+	case 10:
       /* Get device status */
       AsciiStrnCatS (
           mFastbootCommonMsgInfo[i].Msg, sizeof (mFastbootCommonMsgInfo[i].Msg),
@@ -315,6 +353,8 @@ FastbootMenuShowScreen (OPTION_MENU_INFO *OptionMenuInfo)
 
   return Status;
 }
+
+
 
 /* Draw the fastboot menu and start to detect the key's status */
 VOID DisplayFastbootMenu (VOID)
@@ -340,3 +380,6 @@ VOID DisplayFastbootMenu (VOID)
     DEBUG ((EFI_D_INFO, "Display menu is not enabled!\n"));
   }
 }
+
+
+
