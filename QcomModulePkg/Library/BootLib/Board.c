@@ -37,6 +37,7 @@
 #include <Library/UpdateDeviceTree.h>
 #include <Protocol/EFICardInfo.h>
 #include <Protocol/EFIPlatformInfoTypes.h>
+#include <Library/PartitionTableUpdate.h>
 
 #include <LinuxLoaderLib.h>
 
@@ -427,6 +428,87 @@ GetPageSize (UINT32 *PageSize)
     BlkIo = HandleInfoList[0].BlkIo;
     *PageSize = BlkIo->Media->BlockSize;
   }
+}
+
+UINT32
+SizeEmbellish (UINT64 storagesize, CHAR8 *unit, BOOLEAN isram){
+  UINT32 i, j, mul;
+  UINT64 tempsize;
+  CHAR8 sizeunit[] = {' ', 'K', 'M', 'G', 'T'};
+
+  tempsize = storagesize;
+
+  for (j = 0; tempsize >= 1024; j++){
+    tempsize = tempsize >> 10;
+  }
+  if (j > 4) {
+    DEBUG ((EFI_D_ERROR, "storagesize too big,more than TB\n"));
+    return -1;
+  } else {
+    *unit = sizeunit[j];
+    DEBUG ((EFI_D_INFO, "unit is %c\n", *unit));
+  }
+
+  mul = isram ? 0 : 4; //rom is 16'multiple
+  i = tempsize >> mul;
+  tempsize = i << (mul + (j * 10));
+
+  if (tempsize < storagesize)
+    i++;
+
+  return i << mul;
+}
+
+VOID
+GetDdrManufacturerid (CHAR8 *manufacturer, UINT32 Len) {
+  UINT8 manufacturer_id = 0;
+
+  GetDdrManufacturer (&manufacturer_id);
+  switch (manufacturer_id){
+    case 0x01:
+      AsciiSPrint (manufacturer, Len, "%a", "SAMSUNG");
+      break;
+    default:
+      AsciiSPrint (manufacturer, Len, "%a", "UNKNOWN");
+      break;
+  }
+  DEBUG ((EFI_D_INFO, "manufacturer_id: 0x%x\n", manufacturer_id));
+}
+
+VOID
+GetRomstorageSize (CHAR8 *Romstorage, UINT32 Len)
+{
+  UINT64 Romsize;
+  CHAR8  unit = ' ';
+
+  Romsize = SizeEmbellish (GetAllPartitionSize(), &unit, FALSE);
+  AsciiSPrint (Romstorage, Len, "%ld%cB", Romsize,unit);
+}
+
+VOID
+GetRamstorageSize (CHAR8 *Ramstorage, UINT32 Len)
+{
+  EFI_STATUS Status = EFI_NOT_FOUND;
+  RamPartitionEntry *RamPartitions = NULL;
+  UINT32 NumPartitions = 0;
+  UINT64 partitionlength = 0;
+  UINT32 i = 0;
+  CHAR8 unit = ' ';
+
+  Status = ReadRamPartitions (&RamPartitions, &NumPartitions);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((EFI_D_ERROR, "Error returned from ReadRamPartitions %r\n", Status));
+    return;
+  }
+
+  for (i = 0; i < NumPartitions; i++) {
+    partitionlength += RamPartitions[i].AvailableLength;
+  }
+
+  DEBUG ((EFI_D_INFO, "partitionlength: 0x%x\n", partitionlength));
+
+  partitionlength = SizeEmbellish (partitionlength, &unit, TRUE);
+  AsciiSPrint (Ramstorage, Len, "%ld%cB", partitionlength, unit);
 }
 
 UINT32

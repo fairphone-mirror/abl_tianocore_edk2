@@ -145,6 +145,20 @@ STATIC MENU_MSG_INFO mFastbootCommonMsgInfo[] = {
      COMMON,
      0,
      NOACTION},
+    {{"INTERNAL STORAGE SIZE - "},
+     COMMON_FACTOR,
+     BGR_WHITE,
+     BGR_BLACK,
+     COMMON,
+     0,
+     NOACTION},
+    {{"MAIN MEMORY SIZE AND VENDOR - "},
+     COMMON_FACTOR,
+     BGR_WHITE,
+     BGR_BLACK,
+     COMMON,
+     0,
+     NOACTION},
     {{"DEVICE STATE - "},
      COMMON_FACTOR,
      BGR_RED,
@@ -295,6 +309,29 @@ FastbootMenuShowScreen (OPTION_MENU_INFO *OptionMenuInfo)
           IsSecureBootEnabled () ? AsciiStrLen ("yes") : AsciiStrLen ("no"));
       break;
     case 8:
+      /* Get Internal storage size */
+      ZeroMem (StrTemp, sizeof (StrTemp));
+      GetRomstorageSize (StrTemp, MAX_RSP_SIZE);
+      AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+                     sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp,
+                     sizeof (StrTemp));
+      break;
+    case 9:
+      /* Get Main memory size and vendor */
+      ZeroMem (StrTemp, sizeof (StrTemp));
+      GetRamstorageSize (StrTemp, MAX_RSP_SIZE);
+      GetDdrManufacturerid (StrTemp1, sizeof (StrTemp1));
+      AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+              sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp,
+              sizeof (StrTemp));
+      AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+              sizeof (mFastbootCommonMsgInfo[i].Msg), " ",
+              sizeof (" "));
+      AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+              sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp1,
+              sizeof (StrTemp1));
+      break;
+    case 10:
       /* Get device status */
       AsciiStrnCatS (
           mFastbootCommonMsgInfo[i].Msg, sizeof (mFastbootCommonMsgInfo[i].Msg),
