@@ -42,6 +42,12 @@
 
 STATIC OPTION_MENU_INFO gMenuInfo;
 
+#define MAX_DISPLAY_CMD_LINE 256
+#define DISPLAY_PANEL_START_ADDR 18
+#define DISPLAY_PANEL_IC_SIZE 4
+STATIC CHAR8 DisplayPanelName[MAX_DISPLAY_CMD_LINE];
+STATIC UINTN DisplayPanelNameLen = sizeof (DisplayPanelName);
+
 STATIC MENU_MSG_INFO mFastbootOptionTitle[] = {
     {{"START"},
      BIG_FACTOR,
@@ -159,6 +165,13 @@ STATIC MENU_MSG_INFO mFastbootCommonMsgInfo[] = {
      COMMON,
      0,
      NOACTION},
+    {{"DISPLAY PANEL NAME - "},
+     COMMON_FACTOR,
+     BGR_WHITE,
+     BGR_BLACK,
+     COMMON,
+     0,
+     NOACTION},
     {{"DEVICE STATE - "},
      COMMON_FACTOR,
      BGR_RED,
@@ -220,6 +233,18 @@ Exit:
 
   return Status;
 }
+
+STATIC VOID GetDisplayPanelName (VOID)
+{
+  EFI_STATUS Status;
+
+  Status = gRT->GetVariable ((CHAR16 *)L"DisplayPanelConfiguration",
+                             &gQcomTokenSpaceGuid, NULL, &DisplayPanelNameLen,
+                             DisplayPanelName);
+  if (Status != EFI_SUCCESS) {
+    DEBUG ((EFI_D_ERROR, "Unable to get Panel Config, %r\n", Status));
+  }
+}
 /**
   Draw the fastboot menu
   @param[out] OptionMenuInfo  Fastboot option info
@@ -237,6 +262,8 @@ FastbootMenuShowScreen (OPTION_MENU_INFO *OptionMenuInfo)
   CHAR8 StrTemp[MAX_RSP_SIZE] = "";
   CHAR8 StrTemp1[MAX_RSP_SIZE] = "";
   CHAR8 VersionTemp[MAX_VERSION_LEN] = "";
+  CHAR16 PanelIc[MAX_DISPLAY_CMD_LINE];
+  CHAR8 *DisplayPanel;
 
   ZeroMem (&OptionMenuInfo->Info, sizeof (MENU_OPTION_ITEM_INFO));
 
@@ -332,7 +359,23 @@ FastbootMenuShowScreen (OPTION_MENU_INFO *OptionMenuInfo)
 					  sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp1,
 					  sizeof (StrTemp1));
 		break;
-	case 10:
+    case 10:
+	/*Get LCD IC*/
+      GetDisplayPanelName ();
+      StrnCpyS (PanelIc,MAX_MSG_SIZE,(CONST CHAR16 *)DisplayPanelName + 
+			DISPLAY_PANEL_START_ADDR,DISPLAY_PANEL_IC_SIZE);
+      DisplayPanel = (CHAR8 *)PanelIc;
+      AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+                     sizeof (mFastbootCommonMsgInfo[i].Msg), "DJN",
+                     sizeof ("DJN"));
+      AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+                     sizeof (mFastbootCommonMsgInfo[i].Msg), " ",
+                     sizeof (" "));
+      AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+                     sizeof (mFastbootCommonMsgInfo[i].Msg), DisplayPanel,
+                     MAX_MSG_SIZE);
+      break;
+	case 11:
       /* Get device status */
       AsciiStrnCatS (
           mFastbootCommonMsgInfo[i].Msg, sizeof (mFastbootCommonMsgInfo[i].Msg),
