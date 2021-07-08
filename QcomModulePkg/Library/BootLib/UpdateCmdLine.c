@@ -89,6 +89,8 @@ STATIC CONST CHAR8 *InproductFlagCmdLine = " androidboot.inproductionflag=true";
 STATIC CONST CHAR8 *FPCustomId= " androidboot.CID=";
 extern FPConfig_t FPConfig;
 
+STATIC CONST CHAR8 *InEfuseFlag = " androidboot.insecure=false";
+
 STATIC CHAR8 WifiMac[27] = {0};
 extern CHAR8 TraceabilityInfo[512];
 
@@ -586,6 +588,11 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
     AsciiStrCatS (Dst, MaxCmdLineLen, Src);
   }
 
+  if (IsSecureBootEnabled()) {
+    Src = InEfuseFlag;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  }
+
   if (AsciiStrLen(FPConfig.cid) >= 0) {
     Src = FPCustomId;
     AsciiStrCatS (Dst, MaxCmdLineLen, Src);
@@ -801,6 +808,10 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
 
   if (OemInproductFlag->inproductionflag == 1) {
     CmdLineLen += AsciiStrLen (InproductFlagCmdLine);
+  }
+
+  if (IsSecureBootEnabled()) {
+    CmdLineLen += AsciiStrLen (InEfuseFlag);
   }
 
   if (AsciiStrLen(FPConfig.cid) >= 0) {
