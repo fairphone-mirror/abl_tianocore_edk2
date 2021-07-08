@@ -91,6 +91,11 @@ STATIC CONST CHAR8 *FPCustomId= " androidboot.CID=";
 extern FPConfig_t FPConfig;
 //-FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
 
+// FP4-1627, efuse flag, liquan.zhou.t2m, 20210708.
+// if enable efuse, set flag with false. follow ottawa, I don't know why.
+STATIC CONST CHAR8 *InEfuseFlag = " androidboot.insecure=false";
+
+
 //+FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
 STATIC CHAR8 WifiMac[27] = {0};
 extern CHAR8 TraceabilityInfo[512];
@@ -592,6 +597,12 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
     AsciiStrCatS (Dst, MaxCmdLineLen, Src);
   }
 
+  // FP4-1627, efuse flag, liquan.zhou.t2m, 20210708.
+  if (IsSecureBootEnabled()) {
+    Src = InEfuseFlag;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  }
+
   //+FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
   if (AsciiStrLen(FPConfig.cid) >= 0) {
     Src = FPCustomId;
@@ -815,6 +826,11 @@ Define  TARGET_BUILD_MMITEST in AndroidBoot.mk and makefile
   // Task: 9949950
   if (OemInproductFlag->inproductionflag == 1) {
     CmdLineLen += AsciiStrLen (InproductFlagCmdLine);
+  }
+
+  // FP4-1627, efuse flag, liquan.zhou.t2m, 20210708.
+  if (IsSecureBootEnabled()) {
+    CmdLineLen += AsciiStrLen (InEfuseFlag);
   }
 
   //FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
