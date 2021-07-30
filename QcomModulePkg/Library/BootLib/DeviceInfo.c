@@ -325,7 +325,11 @@ ReadRollbackIndex (UINT32 Loc, UINT64 *RollbackIndex)
     return Status;
   }
 
+#ifdef USER_BUILD_VARIANT
   *RollbackIndex = DevInfo.rollback_index[Loc];
+#else
+  *RollbackIndex = 0;
+#endif
   return Status;
 }
 
