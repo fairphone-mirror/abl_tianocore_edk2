@@ -2565,6 +2565,7 @@ CmdReboot (IN CONST CHAR8 *arg, IN VOID *data, IN UINT32 sz)
 }
 
 //+FP4-2479, add debug function in bootloader for user release, liquan.zhou.t2m, 20210813
+#if 0
 STATIC VOID
 CmdOemAllowFlash(IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
 {
@@ -2575,6 +2576,7 @@ CmdOemAllowFlash(IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
     }
     FastbootFail ("Failed to allow flash");
 }
+#endif
 
 STATIC VOID
 CmdClearRollbackIndex (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
@@ -3740,7 +3742,7 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
       {"flashing unlock", CmdFlashingUnlock},
       {"flashing lock", CmdFlashingLock},
       //+FP4-2479, add debug function in bootloader for user release, liquan.zhou.t2m, 20210813
-      {"oem allow-flash", CmdOemAllowFlash},
+      //{"oem allow-flash", CmdOemAllowFlash},
       {"oem clear-rollback-index", CmdClearRollbackIndex},
       //-FP4-2479
 #endif
