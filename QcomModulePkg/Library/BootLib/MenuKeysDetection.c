@@ -101,9 +101,6 @@ VOID WaitForExitKeysDetection (VOID)
 STATIC VOID
 UpdateDeviceStatus (OPTION_MENU_INFO *MsgInfo, INTN Reason)
 {
-  CHAR8 FfbmPageBuffer[FFBM_MODE_BUF_SIZE] = "";
-  EFI_STATUS Status = EFI_SUCCESS;
-  EFI_GUID Ptype = gEfiMiscPartitionGuid;
   MemCardType CardType = UNKNOWN;
 
   /* Clear the screen */
@@ -137,26 +134,6 @@ UpdateDeviceStatus (OPTION_MENU_INFO *MsgInfo, INTN Reason)
   case BACK:
     VerifiedBootMenuShowScreen (MsgInfo, MsgInfo->LastMenuType);
     StartTimer = GetTimerCountms ();
-    break;
-  case FFBM:
-    AsciiSPrint (FfbmPageBuffer, sizeof (FfbmPageBuffer), "ffbm-00");
-    if (CardType == NAND) {
-      Status = GetNandMiscPartiGuid (&Ptype);
-    }
-    if (Status == EFI_SUCCESS) {
-      WriteToPartition (&Ptype, FfbmPageBuffer, sizeof (FfbmPageBuffer));
-    }
-    RebootDevice (NORMAL_MODE);
-    break;
-  case QMMI:
-    AsciiSPrint (FfbmPageBuffer, sizeof (FfbmPageBuffer), "qmmi");
-    if (CardType == NAND) {
-      Status = GetNandMiscPartiGuid (&Ptype);
-    }
-    if (Status == EFI_SUCCESS) {
-      WriteToPartition (&Ptype, FfbmPageBuffer, sizeof (FfbmPageBuffer));
-    }
-    RebootDevice (NORMAL_MODE);
     break;
   }
 }
