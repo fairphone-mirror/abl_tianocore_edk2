@@ -77,6 +77,8 @@ STATIC MENU_MSG_INFO mFastbootOptionTitle[] = {
      OPTION_ITEM,
      0,
      POWEROFF},
+    //FP4-3388, Remove FFBM and QMMI mode in fastboot mode menu, liquan.zhou.t2m, 20220114
+    /*
     {{"Boot to FFBM"},
      BIG_FACTOR,
      BGR_YELLOW,
@@ -91,6 +93,7 @@ STATIC MENU_MSG_INFO mFastbootOptionTitle[] = {
      OPTION_ITEM,
      0,
      QMMI},
+     */
 };
 
 STATIC MENU_MSG_INFO mFastbootCommonMsgInfo[] = {
