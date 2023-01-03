@@ -2593,6 +2593,41 @@ CmdReboot (IN CONST CHAR8 *arg, IN VOID *data, IN UINT32 sz)
   FastbootFail ("Failed to reboot");
 }
 
+STATIC VOID
+CmdEnableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  if (!(strncmp (Arg, " all", 4))) {
+    Status = WriteRecoveryMessage (DEBUG_CMD_ALL);
+  } else if (!(strncmp (Arg, " ramdump", 8))) {
+    Status = WriteRecoveryMessage (DEBUG_CMD_RAMDUMP);
+  } else {
+    FastbootFail ("Failed to set debug mode.");
+    return;
+  }
+
+  if (Status != EFI_SUCCESS) {
+    FastbootFail ("Failed to switch to debug mode");
+    return;
+  }
+  FastbootOkay ("");
+}
+
+STATIC VOID
+CmdDisableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  Status = WriteRecoveryMessage ("");
+  if (Status != EFI_SUCCESS) {
+    FastbootFail ("Failed to close to debug mode");
+    return;
+  }
+
+  FastbootOkay ("");
+}
+
 #if DYNAMIC_PARTITION_SUPPORT
 STATIC VOID
 CmdRebootRecovery (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
@@ -3735,6 +3770,8 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
 #ifdef DYNAMIC_PARTITION_SUPPORT
       {"reboot-recovery", CmdRebootRecovery},
       {"reboot-fastboot", CmdRebootFastboot},
+      {"oem enable-debug", CmdEnableDebug},
+      {"oem disable-debug", CmdDisableDebug},
 #ifdef VIRTUAL_AB_OTA
       {"snapshot-update", CmdUpdateSnapshot},
 #endif
