@@ -102,9 +102,11 @@ extern CHAR8 TraceabilityInfo[512];
 //-FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
 
 //+FP4-492, root for user, liquan.zhou.t2m, 20210531
-STATIC CONST CHAR8 *T2MDebugFlag = " androidboot.t2mdebugflag=true";
+STATIC CONST CHAR8 *T2MDebugRootEnable = " androidboot.t2mdebugflag=true";
 EFI_STATUS HasT2MDebugFlag;
 //-FP4-492, root for user, liquan.zhou.t2m, 20210531
+t2m_debug_mode_t t2m_debug_mode = T2M_DEBUG_NONE;
+STATIC CONST CHAR8 *T2MDebugDownloadEnable = " msm_poweroff.t2m_download_enable=1";
 
 //FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
 STATIC EFI_STATUS SetWifiMac( CHAR8  *Buffer)
@@ -619,10 +621,27 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
 
   //+FP4-492, root for user, liquan.zhou.t2m, 20210531
   if (HasT2MDebugFlag == EFI_SUCCESS) {
-    Src = T2MDebugFlag;
-    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+    switch (t2m_debug_mode) {
+      case T2M_DEBUG_ALL:
+        Src = T2MDebugRootEnable;
+        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+        Src = T2MDebugDownloadEnable;
+        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+        break;
+      case T2M_DEBUG_ROOT:
+        Src = T2MDebugRootEnable;
+        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+        break;
+      case T2M_DEBUG_RAMDUMP:
+        Src = T2MDebugDownloadEnable;
+        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+        break;
+      default:
+        break;
+    }
   }
   //-FP4-492, root for user, liquan.zhou.t2m, 20210531
+
 
   return EFI_SUCCESS;
 }
@@ -844,11 +863,26 @@ Define  TARGET_BUILD_MMITEST in AndroidBoot.mk and makefile
   CmdLineLen += AsciiStrLen (WifiMac);
 
   //FP4-492, root for user, liquan.zhou.t2m, 20210531
-  HasT2MDebugFlag = IsBootIntoDebug();
+  HasT2MDebugFlag = IsBootIntoDebug(& t2m_debug_mode);
   if (HasT2MDebugFlag == EFI_SUCCESS) {
     DEBUG ((EFI_D_VERBOSE, "T2M Debug cookie found.\n"));
-    CmdLineLen += AsciiStrLen (T2MDebugFlag);
+    switch (t2m_debug_mode) {
+      case T2M_DEBUG_ALL:
+        CmdLineLen += AsciiStrLen (T2MDebugRootEnable);
+        CmdLineLen += AsciiStrLen (T2MDebugDownloadEnable);
+        break;
+      case T2M_DEBUG_ROOT:
+        CmdLineLen += AsciiStrLen (T2MDebugRootEnable);
+        break;
+      case T2M_DEBUG_RAMDUMP:
+        CmdLineLen += AsciiStrLen (T2MDebugDownloadEnable);
+        break;
+      default:
+        break;
+    }
   }
+
+
 
   /* 1 extra byte for NULL */
   CmdLineLen += 1;
