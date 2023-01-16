@@ -122,6 +122,9 @@ EFI_STATUS ReadRamPartitions (RamPartitionEntry **RamPartitions,
                   UINT32 *NumPartitions);
 EFI_STATUS GetGranuleSize (UINT32 *MinPasrGranuleSize);
 VOID GetPageSize (UINT32 *PageSize);
+VOID GetDdrManufacturerid(CHAR8 *manufacturer,UINT32 Len);
+VOID GetRomstorageSize (CHAR8 *Romstorage, UINT32 Len);
+VOID GetRamstorageSize (CHAR8 *Ramstorage, UINT32 Len);
 EFI_STATUS BoardDdrType (UINT32 *Type);
 UINT32 BoardPlatformHlosSubType (VOID);
 VOID BoardSoftSku (EFI_SOFT_SKU_ID *SkuId);

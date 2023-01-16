@@ -223,6 +223,58 @@ UINT64 GetPartitionSize (EFI_BLOCK_IO_PROTOCOL *BlockIo)
   return  PartitionSize;
 }
 
+UINT64 GetAllPartitionSize (){
+	INT32 Lun;
+    EFI_STATUS Status;
+	UINT32 MaxHandles = MAX_HANDLEINF_LST_SIZE;
+	HandleInfo BlockIoHandle[MAX_HANDLEINF_LST_SIZE];
+	CHAR8 BootDeviceType[BOOT_DEV_NAME_SIZE_MAX];
+	UINT64 DeviceDensity;
+	EFI_BLOCK_IO_PROTOCOL *BlockIo = NULL;
+	UINT64 Romsize=0;
+
+	
+	GetRootDeviceType (BootDeviceType, BOOT_DEV_NAME_SIZE_MAX);
+	for (Lun = 0; Lun < MaxLuns; Lun++) {
+	  if (!AsciiStrnCmp (BootDeviceType, "EMMC", AsciiStrLen ("EMMC"))) {
+		Status = GetStorageHandle (NO_LUN, BlockIoHandle, &MaxHandles);
+	  } else if (!AsciiStrnCmp (BootDeviceType, "UFS", AsciiStrLen ("UFS"))) {
+		Status = GetStorageHandle (Lun, BlockIoHandle, &MaxHandles);
+	  } else if (!AsciiStrnCmp (BootDeviceType, "NAND", AsciiStrLen ("NAND"))) {
+		return -1;
+		
+	  } else {
+		DEBUG ((EFI_D_ERROR, "Unsupported  boot device type\n"));
+		return -1;
+	  }
+	  if (Status != EFI_SUCCESS) {
+      DEBUG ((EFI_D_ERROR,
+              "Failed to get BlkIo for device. MaxHandles:%d - %r\n",
+              MaxHandles, Status));
+      return -1;
+	 }
+	 if (MaxHandles != 1) {
+	   DEBUG ((EFI_D_VERBOSE,
+	           "Failed to get the BlockIo for device. MaxHandle:%d, %r\n",
+	           MaxHandles, Status));
+	   continue;
+	 }
+
+	 BlockIo = BlockIoHandle[0].BlkIo;
+	 DeviceDensity = GetPartitionSize (BlockIo);
+	 if (!DeviceDensity) {
+	   return -1;
+	 }
+
+	 Romsize += DeviceDensity;
+	 
+   }
+
+   return Romsize;
+
+}
+
+
 VOID UpdatePartitionAttributes (UINT32 UpdateType)
 {
   UINT32 BlkSz;
@@ -1073,12 +1125,17 @@ WriteGpt (INT32 Lun, UINT32 Sz, UINT8 *Gpt)
     DEBUG ((EFI_D_ERROR, "Failed to patch GPT\n"));
     return Ret;
   }
+
+  //+ FP4-215, don't erase partitions when flash gpt, liquan.zhou.t2m, 20210428
+  #if 0
   /* Erase the entire card */
   Status = ErasePartition (BlockIo, BlockIoHandle[0].Handle);
   if (Status != EFI_SUCCESS) {
     DEBUG ((EFI_D_ERROR, "Error erasing the storage device: %r\n", Status));
     return FAILURE;
   }
+  #endif
+  //- FP4-215, don't erase partitions when flash gpt, liquan.zhou.t2m, 20210428
 
   /* write the protective MBR */
   Status = BlockIo->WriteBlocks (BlockIo, BlockIo->Media->MediaId, 0, BlkSz,

@@ -324,8 +324,12 @@ ReadRollbackIndex (UINT32 Loc, UINT64 *RollbackIndex)
             Loc, ARRAY_SIZE (DevInfo.rollback_index)));
     return Status;
   }
-
+#ifdef USER_BUILD_VARIANT
   *RollbackIndex = DevInfo.rollback_index[Loc];
+#else
+  //ignore rollback_index info stored in devinfo. liquan.zhou.t2m, 20210525
+  *RollbackIndex = 0;
+#endif
   return Status;
 }
 

@@ -224,6 +224,9 @@ STATIC BOOLEAN LunSet;
 STATIC FASTBOOT_CMD *cmdlist;
 STATIC UINT32 IsAllowUnlock;
 
+//FP4-2479, add debug function in bootloader for user release, liquan.zhou.t2m, 20210813
+STATIC BOOLEAN IsAllowFlashOem = FALSE;
+
 STATIC EFI_STATUS
 FastbootCommandSetup (VOID *Base, UINT64 Size);
 STATIC VOID
@@ -1737,7 +1740,7 @@ CmdFlash (IN CONST CHAR8 *arg, IN VOID *data, IN UINT32 sz)
   if ((GetAVBVersion () == AVB_LE) ||
       ((GetAVBVersion () != AVB_LE) &&
       (TargetBuildVariantUser ()))) {
-    if (!IsUnlocked ()) {
+    if (!IsUnlocked () && !IsAllowFlashOem) {
       FastbootFail ("Flashing is not allowed in Lock State");
       return;
     }
@@ -2010,7 +2013,7 @@ CmdErase (IN CONST CHAR8 *arg, IN VOID *data, IN UINT32 sz)
   if ((GetAVBVersion () == AVB_LE) ||
       ((GetAVBVersion () != AVB_LE) &&
       (TargetBuildVariantUser ()))) {
-    if (!IsUnlocked ()) {
+    if (!IsUnlocked () && !IsAllowFlashOem) {
       FastbootFail ("Erase is not allowed in Lock State");
       return;
     }
@@ -2107,7 +2110,7 @@ CmdSetActive (CONST CHAR8 *Arg, VOID *Data, UINT32 Size)
   Slot NewSlot = {{0}};
   EFI_STATUS Status;
 
-  if (TargetBuildVariantUser () && !IsUnlocked ()) {
+  if (TargetBuildVariantUser () && !IsUnlocked () && !IsAllowFlashOem) {
     FastbootFail ("Slot Change is not allowed in Lock State\n");
     return;
   }
@@ -2592,6 +2595,88 @@ CmdReboot (IN CONST CHAR8 *arg, IN VOID *data, IN UINT32 sz)
   // Shouldn't get here
   FastbootFail ("Failed to reboot");
 }
+
+//+FP4-2479, add debug function in bootloader for user release, liquan.zhou.t2m, 20210813
+STATIC VOID
+CmdOemAllowFlash(IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
+{
+    if(!(strncmp(Arg, " true", 5))) {
+        IsAllowFlashOem = TRUE;
+        FastbootOkay("");
+        return;
+    }
+    FastbootFail ("Failed to allow flash");
+}
+
+STATIC VOID
+CmdClearRollbackIndex (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  Status = WriteRollbackIndex(0,0);
+  if (Status != EFI_SUCCESS) {
+    FastbootFail ("Failed to clear RollbackIndex");
+    return;
+  }
+  Status = WriteRollbackIndex(1,0);
+  if (Status != EFI_SUCCESS) {
+    FastbootFail ("Failed to clear RollbackIndex");
+    return;
+  }
+  FastbootOkay ("");
+}
+//-FP4-2479, add debug function in bootloader for user release, liquan.zhou.t2m, 20210813
+
+//+FP4-492, root for user, liquan.zhou.t2m, 20210531
+STATIC VOID
+CmdEnableDebugRoot (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  Status = WriteRecoveryMessage (DEBUG_CMD_ROOT);
+  if (Status != EFI_SUCCESS) {
+    FastbootFail ("Failed to switch to debug-root mode");
+    return;
+  }
+  FastbootOkay ("");
+}
+
+//+FP4-492, root for user, liquan.zhou.t2m, 20210531
+STATIC VOID
+CmdEnableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  if(!(strncmp(Arg, " all", 4))) {
+    Status = WriteRecoveryMessage (DEBUG_CMD_ALL);
+  } else if (!(strncmp(Arg, " ramdump", 8))) {
+    Status = WriteRecoveryMessage (DEBUG_CMD_RAMDUMP);
+  } else if (!(strncmp(Arg, " root", 5))) {
+    Status = WriteRecoveryMessage (DEBUG_CMD_ROOT);
+  } else {
+    FastbootFail ("Failed to set debug mode.");
+    return;
+  }
+  if (Status != EFI_SUCCESS) {
+    FastbootFail ("Failed to switch to debug mode");
+    return;
+  }
+  FastbootOkay ("");
+}
+
+STATIC VOID
+CmdDisableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  Status = WriteRecoveryMessage ("");
+  if (Status != EFI_SUCCESS) {
+    FastbootFail ("Failed to close to debug mode");
+    return;
+  }
+  FastbootOkay ("");
+}
+//-FP4-492, root for user, liquan.zhou.t2m, 20210531
 
 #if DYNAMIC_PARTITION_SUPPORT
 STATIC VOID
@@ -3710,6 +3795,10 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
       {"flashing get_unlock_ability", CmdFlashingGetUnlockAbility},
       {"flashing unlock", CmdFlashingUnlock},
       {"flashing lock", CmdFlashingLock},
+      //+FP4-2479, add debug function in bootloader for user release, liquan.zhou.t2m, 20210813
+      {"oem allow-flash", CmdOemAllowFlash},
+      {"oem clear-rollback-index", CmdClearRollbackIndex},
+      //-FP4-2479
 #endif
 /*
  *CAUTION(CRITICAL): Enabling these commands will allow changes to bootimage.
@@ -3735,6 +3824,12 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
 #ifdef DYNAMIC_PARTITION_SUPPORT
       {"reboot-recovery", CmdRebootRecovery},
       {"reboot-fastboot", CmdRebootFastboot},
+      //+FP4-492, root for user, liquan.zhou.t2m, 20210531
+      {"oem enable-root", CmdEnableDebugRoot},
+      {"oem disable-root", CmdDisableDebug},
+      //-FP4-492, root for user, liquan.zhou.t2m, 20210531
+      {"oem enable-debug", CmdEnableDebug},
+      {"oem disable-debug", CmdDisableDebug},
 #ifdef VIRTUAL_AB_OTA
       {"snapshot-update", CmdUpdateSnapshot},
 #endif

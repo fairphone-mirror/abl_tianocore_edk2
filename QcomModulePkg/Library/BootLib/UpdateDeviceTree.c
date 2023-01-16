@@ -638,6 +638,27 @@ dev_tree_add_mem_infoV64 (VOID *fdt, UINT32 offset, UINT64 addr, UINT64 size)
 
   return ret;
 }
+EFI_STATUS
+GetDdrManufacturer(UINT8 *manufacturer_id){
+  struct ddr_details_entry_info *DdrInfo;
+  UINT64 Revision;
+  EFI_STATUS Status;
+  
+  DdrInfo = AllocateZeroPool (sizeof (struct ddr_details_entry_info));
+  if (DdrInfo == NULL) {
+    DEBUG ((EFI_D_ERROR, "DDR Info Buffer: Out of resources\n"));
+    return EFI_OUT_OF_RESOURCES;
+  }
+  
+  Status = GetDDRInfo (DdrInfo, &Revision);
+  if (Status == EFI_SUCCESS) {
+  	*manufacturer_id=DdrInfo->manufacturer_id;
+	DEBUG ((EFI_D_INFO, "manufacturer_id: 0x%x\n", *manufacturer_id));
+  }
+  
+  return Status;
+	
+}
 
 /* Top level function that updates the device tree. */
 EFI_STATUS

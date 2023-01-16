@@ -36,6 +36,18 @@
 #define RECOVERY_BOOT_RECOVERY "boot-recovery"
 #define RECOVERY_BOOT_FASTBOOT "boot-fastboot"
 
+//FP4-492, root for user, liquan.zhou.t2m, 20210531
+#define DEBUG_CMD_ALL "debug-0"
+#define DEBUG_CMD_ROOT "debug-1"
+#define DEBUG_CMD_RAMDUMP "debug-2"
+
+typedef enum _t2m_debug_mode_t {
+  T2M_DEBUG_NONE,
+  T2M_DEBUG_ALL,
+  T2M_DEBUG_ROOT,
+  T2M_DEBUG_RAMDUMP,
+} t2m_debug_mode_t;
+
 /* Recovery Message */
 struct RecoveryMessage {
   CHAR8 command[32];
@@ -92,4 +104,9 @@ EFI_STATUS
 SetSnapshotMergeStatus (VirtualAbMergeStatus MergeStatus);
 EFI_STATUS
 ReadFromPartition (EFI_GUID *Ptype, VOID **Msg, UINT32 Size);
+
+//FP4-492, root for user, liquan.zhou.t2m, 20210531
+EFI_STATUS
+IsBootIntoDebug (t2m_debug_mode_t *t2m_debug_mode);
+
 #endif

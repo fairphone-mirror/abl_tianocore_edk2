@@ -30,7 +30,7 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DeviceInfo.h>
-#include <Library/DrawUI.h>
+//#include <Library/DrawUI.h>
 #include <Library/FastbootMenu.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/MenuKeysDetection.h>
@@ -41,6 +41,12 @@
 #include <Uefi.h>
 
 STATIC OPTION_MENU_INFO gMenuInfo;
+
+#define MAX_DISPLAY_CMD_LINE 256
+#define DISPLAY_PANEL_START_ADDR 18
+#define DISPLAY_PANEL_IC_SIZE 4
+STATIC CHAR8 DisplayPanelName[MAX_DISPLAY_CMD_LINE];
+STATIC UINTN DisplayPanelNameLen = sizeof (DisplayPanelName);
 
 STATIC MENU_MSG_INFO mFastbootOptionTitle[] = {
     {{"START"},
@@ -71,6 +77,8 @@ STATIC MENU_MSG_INFO mFastbootOptionTitle[] = {
      OPTION_ITEM,
      0,
      POWEROFF},
+    //FP4-3388, Remove FFBM and QMMI mode in fastboot mode menu, liquan.zhou.t2m, 20220114
+    /*
     {{"Boot to FFBM"},
      BIG_FACTOR,
      BGR_YELLOW,
@@ -85,6 +93,7 @@ STATIC MENU_MSG_INFO mFastbootOptionTitle[] = {
      OPTION_ITEM,
      0,
      QMMI},
+     */
 };
 
 STATIC MENU_MSG_INFO mFastbootCommonMsgInfo[] = {
@@ -145,6 +154,27 @@ STATIC MENU_MSG_INFO mFastbootCommonMsgInfo[] = {
      COMMON,
      0,
      NOACTION},
+     {{"INTERNAL STORAGE SIZE - "},
+     COMMON_FACTOR,
+     BGR_WHITE,
+     BGR_BLACK,
+     COMMON,
+     0,
+     NOACTION},
+    {{"MAIN MEMORY SIZE AND VENDOR - "},
+     COMMON_FACTOR,
+     BGR_WHITE,
+     BGR_BLACK,
+     COMMON,
+     0,
+     NOACTION},
+    {{"DISPLAY PANEL NAME - "},
+     COMMON_FACTOR,
+     BGR_WHITE,
+     BGR_BLACK,
+     COMMON,
+     0,
+     NOACTION},
     {{"DEVICE STATE - "},
      COMMON_FACTOR,
      BGR_RED,
@@ -152,6 +182,7 @@ STATIC MENU_MSG_INFO mFastbootCommonMsgInfo[] = {
      COMMON,
      0,
      NOACTION},
+
 };
 
 /**
@@ -165,7 +196,7 @@ EFI_STATUS
 UpdateFastbootOptionItem (UINT32 OptionItem, UINT32 *pLocation)
 {
   EFI_STATUS Status = EFI_SUCCESS;
-  UINT32 Location = 0;
+  UINT32 Location = 45; //FP4-851, liquan.zhou.t2m, 20210617, The text of the guidance message is not completely
   UINT32 Height = 0;
   MENU_MSG_INFO *FastbootLineInfo = NULL;
 
@@ -206,6 +237,17 @@ Exit:
   return Status;
 }
 
+STATIC VOID GetDisplayPanelName (VOID)
+{
+  EFI_STATUS Status;
+
+  Status = gRT->GetVariable ((CHAR16 *)L"DisplayPanelConfiguration",
+                             &gQcomTokenSpaceGuid, NULL, &DisplayPanelNameLen,
+                             DisplayPanelName);
+  if (Status != EFI_SUCCESS) {
+    DEBUG ((EFI_D_ERROR, "Unable to get Panel Config, %r\n", Status));
+  }
+}
 /**
   Draw the fastboot menu
   @param[out] OptionMenuInfo  Fastboot option info
@@ -223,6 +265,8 @@ FastbootMenuShowScreen (OPTION_MENU_INFO *OptionMenuInfo)
   CHAR8 StrTemp[MAX_RSP_SIZE] = "";
   CHAR8 StrTemp1[MAX_RSP_SIZE] = "";
   CHAR8 VersionTemp[MAX_VERSION_LEN] = "";
+  CHAR16 PanelIc[MAX_DISPLAY_CMD_LINE];
+  CHAR8 *DisplayPanel;
 
   ZeroMem (&OptionMenuInfo->Info, sizeof (MENU_OPTION_ITEM_INFO));
 
@@ -294,7 +338,47 @@ FastbootMenuShowScreen (OPTION_MENU_INFO *OptionMenuInfo)
           IsSecureBootEnabled () ? "yes" : "no",
           IsSecureBootEnabled () ? AsciiStrLen ("yes") : AsciiStrLen ("no"));
       break;
-    case 8:
+
+	case 8:
+	/*Get Internal storage size*/
+	  ZeroMem (StrTemp, sizeof (StrTemp));
+	  GetRomstorageSize(StrTemp,MAX_RSP_SIZE);
+      AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+                     sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp,
+                     sizeof (StrTemp));
+	  break;
+	case 9:
+	/*Get Main memory size and vendor*/
+	   ZeroMem (StrTemp, sizeof (StrTemp));
+	   GetRamstorageSize(StrTemp,MAX_RSP_SIZE);
+	   GetDdrManufacturerid(StrTemp1, sizeof (StrTemp1));
+	   AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+					  sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp,
+					  sizeof (StrTemp));
+	   AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+					  sizeof (mFastbootCommonMsgInfo[i].Msg), " ",
+					  sizeof (" "));
+	   AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+					  sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp1,
+					  sizeof (StrTemp1));
+		break;
+    case 10:
+	/*Get LCD IC*/
+      GetDisplayPanelName ();
+      StrnCpyS (PanelIc,MAX_MSG_SIZE,(CONST CHAR16 *)DisplayPanelName + 
+			DISPLAY_PANEL_START_ADDR,DISPLAY_PANEL_IC_SIZE);
+      DisplayPanel = (CHAR8 *)PanelIc;
+      AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+                     sizeof (mFastbootCommonMsgInfo[i].Msg), "DJN",
+                     sizeof ("DJN"));
+      AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+                     sizeof (mFastbootCommonMsgInfo[i].Msg), " ",
+                     sizeof (" "));
+      AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
+                     sizeof (mFastbootCommonMsgInfo[i].Msg), DisplayPanel,
+                     MAX_MSG_SIZE);
+      break;
+	case 11:
       /* Get device status */
       AsciiStrnCatS (
           mFastbootCommonMsgInfo[i].Msg, sizeof (mFastbootCommonMsgInfo[i].Msg),
@@ -315,6 +399,8 @@ FastbootMenuShowScreen (OPTION_MENU_INFO *OptionMenuInfo)
 
   return Status;
 }
+
+
 
 /* Draw the fastboot menu and start to detect the key's status */
 VOID DisplayFastbootMenu (VOID)
@@ -340,3 +426,6 @@ VOID DisplayFastbootMenu (VOID)
     DEBUG ((EFI_D_INFO, "Display menu is not enabled!\n"));
   }
 }
+
+
+

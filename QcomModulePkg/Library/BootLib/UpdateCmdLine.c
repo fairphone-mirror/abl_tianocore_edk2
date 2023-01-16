@@ -46,6 +46,7 @@
 #include "UpdateCmdLine.h"
 #include "Recovery.h"
 #include "LECmdLine.h"
+#include <fpconfig_persist.h>
 
 STATIC CONST CHAR8 *DynamicBootDeviceCmdLine =
                                       " androidboot.boot_devices=soc/";
@@ -82,6 +83,47 @@ STATIC CHAR8 *FstabSuffixEmmc = "emmc";
 STATIC CHAR8 *FstabSuffixDefault = "default";
 #define MAX_SOFTSKU_IDX_STR 23
 STATIC CHAR8 *SoftSkuIdxStr = " socinfo.softsku_idx=";
+
+// FP4-263, innproduct flag, liquan.zhou.t2m, 20210509.
+// Task: 9949950
+STATIC CONST CHAR8 *InproductFlagCmdLine = " androidboot.inproductionflag=true";
+
+//+FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+STATIC CONST CHAR8 *FPCustomId= " androidboot.CID=";
+extern FPConfig_t FPConfig;
+//-FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+
+// FP4-1627, efuse flag, liquan.zhou.t2m, 20210708.
+// if enable efuse, set flag with false. follow ottawa, I don't know why.
+STATIC CONST CHAR8 *InEfuseFlag = " androidboot.insecure=false";
+
+
+//+FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+STATIC CHAR8 WifiMac[27] = {0};
+extern CHAR8 TraceabilityInfo[512];
+//-FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+
+//+FP4-492, root for user, liquan.zhou.t2m, 20210531
+STATIC CONST CHAR8 *T2MDebugRootEnable = " androidboot.t2mdebugflag=true";
+EFI_STATUS HasT2MDebugFlag;
+//-FP4-492, root for user, liquan.zhou.t2m, 20210531
+t2m_debug_mode_t t2m_debug_mode = T2M_DEBUG_NONE;
+STATIC CONST CHAR8 *T2MDebugDownloadEnable = " msm_poweroff.t2m_download_enable=1";
+
+//FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+STATIC EFI_STATUS SetWifiMac( CHAR8  *Buffer)
+{
+    AsciiSPrint(WifiMac, 27, " WifiMac=%02x:%02x:%02x:%02x:%02x:%02x",
+        (unsigned char)Buffer[62],(unsigned char)Buffer[61],
+        (unsigned char)Buffer[60],(unsigned char)Buffer[59],
+        (unsigned char)Buffer[58],(unsigned char)Buffer[57]);
+
+    DEBUG((EFI_D_ERROR,"WifiMac=%02x:%02x:%02x:%02x:%02x:%02x\n",
+        (unsigned char)Buffer[62],(unsigned char)Buffer[61],
+        (unsigned char)Buffer[60],(unsigned char)Buffer[59],
+        (unsigned char)Buffer[58],(unsigned char)Buffer[57]));
+    return  0;
+}
 
 EFI_STATUS
 TargetPauseForBatteryCharge (BOOLEAN *BatteryStatus)
@@ -555,6 +597,57 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
     Src = Param->SoftSkuStr;
     AsciiStrCatS (Dst, MaxCmdLineLen, Src);
   }
+
+  // FP4-263, innproduct flag, liquan.zhou.t2m, 20210509.
+  // Task: 9949950
+  if (OemInproductFlag->inproductionflag == 1) {
+    Src = InproductFlagCmdLine;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  }
+
+  // FP4-1627, efuse flag, liquan.zhou.t2m, 20210708.
+  if (IsSecureBootEnabled()) {
+    Src = InEfuseFlag;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  }
+
+  //+FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+  if (AsciiStrLen(FPConfig.cid) >= 0) {
+    Src = FPCustomId;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+    Src = FPConfig.cid;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  }
+  //-FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+
+  //+FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+  Src = WifiMac;
+  AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  //-FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+
+  //+FP4-492, root for user, liquan.zhou.t2m, 20210531
+  if (HasT2MDebugFlag == EFI_SUCCESS) {
+    switch (t2m_debug_mode) {
+      case T2M_DEBUG_ALL:
+        Src = T2MDebugRootEnable;
+        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+        Src = T2MDebugDownloadEnable;
+        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+        break;
+      case T2M_DEBUG_ROOT:
+        Src = T2MDebugRootEnable;
+        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+        break;
+      case T2M_DEBUG_RAMDUMP:
+        Src = T2MDebugDownloadEnable;
+        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+        break;
+      default:
+        break;
+    }
+  }
+  //-FP4-492, root for user, liquan.zhou.t2m, 20210531
+
   return EFI_SUCCESS;
 }
 
@@ -662,9 +755,18 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
     CmdLineLen += AsciiStrLen (FfbmStr);
     /* reduce kernel console messages to speed-up boot */
     CmdLineLen += AsciiStrLen (LogLevel);
+
+/*zxzadd for power off charge enable, if in mini software, need add the macro FEATURE_DISABLE_CHARGING_MMI in
+QcomModulePkg.dsc  !if $(TARGET_BUILD_MMITEST) -DFEATURE_DISABLE_CHARGING_MMI;
+Define  TARGET_BUILD_MMITEST in AndroidBoot.mk and makefile
+*/
+#ifndef FEATURE_DISABLE_CHARGING_MMI
+  } else if (BatteryStatus && !Recovery) {
+#else
   } else if (BatteryStatus &&
              IsChargingScreenEnable () &&
              !Recovery) {
+#endif
     DEBUG ((EFI_D_INFO, "Device will boot into off mode charging mode\n"));
     PauseAtBootUp = 1;
     CmdLineLen += AsciiStrLen (BatteryChgPause);
@@ -752,6 +854,48 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
                    "%a%d", SoftSkuIdxStr , SkuIdx);
       CmdLineLen += AsciiStrLen (SoftSkuStr);
   }
+
+  // FP4-263, innproduct flag, liquan.zhou.t2m, 20210509.
+  // Task: 9949950
+  if (OemInproductFlag->inproductionflag == 1) {
+    CmdLineLen += AsciiStrLen (InproductFlagCmdLine);
+  }
+
+  // FP4-1627, efuse flag, liquan.zhou.t2m, 20210708.
+  if (IsSecureBootEnabled()) {
+    CmdLineLen += AsciiStrLen (InEfuseFlag);
+  }
+
+  //FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+  if (AsciiStrLen(FPConfig.cid) >= 0) {
+    CmdLineLen += AsciiStrLen (FPCustomId);
+    CmdLineLen += AsciiStrLen (FPConfig.cid);
+  }
+
+  //FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
+  SetWifiMac(TraceabilityInfo);
+  CmdLineLen += AsciiStrLen (WifiMac);
+
+  //FP4-492, root for user, liquan.zhou.t2m, 20210531
+  HasT2MDebugFlag = IsBootIntoDebug(& t2m_debug_mode);
+  if (HasT2MDebugFlag == EFI_SUCCESS) {
+    DEBUG ((EFI_D_VERBOSE, "T2M Debug cookie found.\n"));
+    switch (t2m_debug_mode) {
+      case T2M_DEBUG_ALL:
+        CmdLineLen += AsciiStrLen (T2MDebugRootEnable);
+        CmdLineLen += AsciiStrLen (T2MDebugDownloadEnable);
+        break;
+      case T2M_DEBUG_ROOT:
+        CmdLineLen += AsciiStrLen (T2MDebugRootEnable);
+        break;
+      case T2M_DEBUG_RAMDUMP:
+        CmdLineLen += AsciiStrLen (T2MDebugDownloadEnable);
+        break;
+      default:
+        break;
+    }
+  }
+
   /* 1 extra byte for NULL */
   CmdLineLen += 1;
 
