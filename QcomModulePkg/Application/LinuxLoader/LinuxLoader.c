@@ -48,6 +48,9 @@
 #include <Library/HypervisorMvCalls.h>
 #include <Library/UpdateCmdLine.h>
 
+//FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+CHAR8 TraceabilityInfo[512] = {0};
+
 #define MAX_APP_STR_LEN 64
 #define MAX_NUM_FS 10
 #define DEFAULT_STACK_CHK_GUARD 0xc0c0c0c0
@@ -155,6 +158,88 @@ WaitForDisplayCompletion (VOID)
 }
 #endif
 
+STATIC
+EFI_STATUS
+PartitionGetInfo (IN CONST CHAR16 *PartitionName,
+                  OUT EFI_BLOCK_IO_PROTOCOL **BlockIo,
+                  OUT EFI_HANDLE **Handle)
+{
+  EFI_STATUS Status;
+  EFI_PARTITION_ENTRY *PartEntry;
+  UINT16 i;
+  UINT32 j;
+  /* By default the LunStart and LunEnd would point to '0' and max value */
+  UINT32 LunStart = 0;
+  UINT32 LunEnd = GetMaxLuns ();
+
+  for (i = LunStart; i < LunEnd; i++) {
+    for (j = 0; j < Ptable[i].MaxHandles; j++) {
+      Status =
+          gBS->HandleProtocol (Ptable[i].HandleInfoList[j].Handle,
+                               &gEfiPartitionRecordGuid, (VOID **)&PartEntry);
+      if (EFI_ERROR (Status)) {
+        continue;
+      }
+      if (!(StrCmp (PartitionName, PartEntry->PartitionName))) {
+        *BlockIo = Ptable[i].HandleInfoList[j].BlkIo;
+        *Handle = Ptable[i].HandleInfoList[j].Handle;
+        return Status;
+      }
+    }
+  }
+
+  DEBUG ((EFI_D_ERROR, "Partition not found : %s\n", PartitionName));
+  return EFI_NOT_FOUND;
+}
+
+//+FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+STATIC
+EFI_STATUS
+GetTraceabilityPartitionInfo ()
+{
+  EFI_STATUS Status;
+  EFI_BLOCK_IO_PROTOCOL *BlockIo = NULL;
+  EFI_HANDLE *Handle = NULL;
+  CONST CHAR16 *PartitionName = L"traceability";
+
+  Status = PartitionGetInfo (PartitionName, &BlockIo, &Handle);
+  if (Status != EFI_SUCCESS) {
+    return Status;
+  }
+  if (!BlockIo) {
+    DEBUG ((EFI_D_ERROR, "BlockIo for %s is corrupted\n", PartitionName));
+    return EFI_VOLUME_CORRUPTED;
+  }
+  if (!Handle) {
+    DEBUG ((EFI_D_ERROR, "EFI handle for %s is corrupted\n", PartitionName));
+    return EFI_VOLUME_CORRUPTED;
+  }
+
+  UINT32 DataOffset = 0 / BlockIo->Media->BlockSize;
+  UINT64 BuffSize = ROUND_TO_PAGE (sizeof(TraceabilityInfo), BlockIo->Media->BlockSize - 1);
+  CHAR8 *Buff = AllocateZeroPool (BuffSize);
+
+  if (!Buff) {
+    DEBUG ((EFI_D_ERROR, "Error allocating memory for reading inproductflag\n"));
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  DEBUG ((EFI_D_INFO, "traceability start loading.\n"));
+  Status = BlockIo->ReadBlocks (BlockIo, BlockIo->Media->MediaId,
+                  DataOffset, BuffSize, (VOID *) Buff);
+
+  if (Status == EFI_SUCCESS) {
+    memcpy(&TraceabilityInfo, Buff, sizeof(TraceabilityInfo));
+  } else {
+    DEBUG ((EFI_D_ERROR, "traceability loading error\n"));
+  }
+
+  FreePool (Buff);
+
+  return Status;
+}
+//-FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+
 /**
   Linux Loader Application EntryPoint
 
@@ -216,6 +301,9 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
     DEBUG ((EFI_D_VERBOSE, "Multi Slot boot is supported\n"));
     FindPtnActiveSlot ();
   }
+
+  //FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+  GetTraceabilityPartitionInfo();
 
   Status = GetKeyPress (&KeyPressed);
   if (Status == EFI_SUCCESS) {
