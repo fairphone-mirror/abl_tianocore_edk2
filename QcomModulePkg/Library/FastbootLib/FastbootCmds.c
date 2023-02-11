@@ -224,6 +224,9 @@ STATIC BOOLEAN LunSet;
 STATIC FASTBOOT_CMD *cmdlist;
 STATIC UINT32 IsAllowUnlock;
 
+//FP5-280, Temporary bootloader unlock to flash images. liquan.zhou.t2m. 202302111508
+STATIC BOOLEAN IsAllowFlashOem = FALSE;
+
 STATIC EFI_STATUS
 FastbootCommandSetup (VOID *Base, UINT64 Size);
 STATIC VOID
@@ -1287,7 +1290,7 @@ HandleMetaImgFlash (IN CHAR16 *PartitionName,
     AsciiStrToUnicodeStr (img_header_entry[i].ptn_name, PartitionNameFromMeta);
 
     if (!IsUnlockCritical () &&
-        IsCriticalPartition (PartitionNameFromMeta)) {
+        IsCriticalPartition (PartitionNameFromMeta) && !IsAllowFlashOem) {
       FastbootFail ("Flashing is not allowed for Critical Partitions\n");
       return EFI_INVALID_PARAMETER;
     }
@@ -1737,12 +1740,12 @@ CmdFlash (IN CONST CHAR8 *arg, IN VOID *data, IN UINT32 sz)
   if ((GetAVBVersion () == AVB_LE) ||
       ((GetAVBVersion () != AVB_LE) &&
       (TargetBuildVariantUser ()))) {
-    if (!IsUnlocked ()) {
+    if (!IsUnlocked () && !IsAllowFlashOem) {
       FastbootFail ("Flashing is not allowed in Lock State");
       return;
     }
 
-    if (!IsUnlockCritical () && IsCriticalPartition (PartitionName)) {
+    if (!IsUnlockCritical () && IsCriticalPartition (PartitionName) && !IsAllowFlashOem) {
       FastbootFail ("Flashing is not allowed for Critical Partitions\n");
       return;
     }
@@ -2010,12 +2013,12 @@ CmdErase (IN CONST CHAR8 *arg, IN VOID *data, IN UINT32 sz)
   if ((GetAVBVersion () == AVB_LE) ||
       ((GetAVBVersion () != AVB_LE) &&
       (TargetBuildVariantUser ()))) {
-    if (!IsUnlocked ()) {
+    if (!IsUnlocked () && !IsAllowFlashOem) {
       FastbootFail ("Erase is not allowed in Lock State");
       return;
     }
 
-    if (!IsUnlockCritical () && IsCriticalPartition (PartitionName)) {
+    if (!IsUnlockCritical () && IsCriticalPartition (PartitionName) && !IsAllowFlashOem) {
       FastbootFail ("Erase is not allowed for Critical Partitions\n");
       return;
     }
@@ -2107,7 +2110,7 @@ CmdSetActive (CONST CHAR8 *Arg, VOID *Data, UINT32 Size)
   Slot NewSlot = {{0}};
   EFI_STATUS Status;
 
-  if (TargetBuildVariantUser () && !IsUnlocked ()) {
+  if (TargetBuildVariantUser () && !IsUnlocked () && !IsAllowFlashOem) {
     FastbootFail ("Slot Change is not allowed in Lock State\n");
     return;
   }
@@ -2592,6 +2595,19 @@ CmdReboot (IN CONST CHAR8 *arg, IN VOID *data, IN UINT32 sz)
   // Shouldn't get here
   FastbootFail ("Failed to reboot");
 }
+
+//+ FP5-280, Temporary bootloader unlock to flash images. liquan.zhou.t2m. 20230211
+STATIC VOID
+CmdOemAllowFlash(IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
+{
+//    if(!(strncmp(Arg, " true", 5))) {
+        IsAllowFlashOem = TRUE;
+        FastbootOkay("");
+        return;
+//    }
+//    FastbootFail ("Failed to allow flash");
+}
+//- FP5-280, Temporary bootloader unlock to flash images. liquan.zhou.t2m. 20230211
 
 #if DYNAMIC_PARTITION_SUPPORT
 STATIC VOID
@@ -3743,6 +3759,10 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
       {"getvar:", CmdGetVar},
       {"download:", CmdDownload},
       {"oem display-cmdline", CmdOemDisplayCommandLine},
+      //+ FP5-280, Temporary bootloader unlock to flash images. liquan.zhou.t2m. 20230211
+      {"oem allow-flash", CmdOemAllowFlash},
+      {"oem unlock-flash", CmdOemAllowFlash},
+      //- FP5-280, Temporary bootloader unlock to flash images. liquan.zhou.t2m. 20230211
   };
 
   /* Register the commands only for non-user builds */
