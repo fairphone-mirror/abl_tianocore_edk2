@@ -83,6 +83,27 @@ STATIC CHAR8 *FstabSuffixDefault = "default";
 #define MAX_SOFTSKU_IDX_STR 23
 STATIC CHAR8 *SoftSkuIdxStr = " socinfo.softsku_idx=";
 
+//+FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+STATIC CHAR8 WifiMac[27] = {0};
+extern CHAR8 TraceabilityInfo[512];
+//-FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+
+//+ FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+STATIC EFI_STATUS SetWifiMac( CHAR8  *Buffer)
+{
+    AsciiSPrint(WifiMac, 27, " WifiMac=%02x:%02x:%02x:%02x:%02x:%02x",
+        (unsigned char)Buffer[62],(unsigned char)Buffer[61],
+        (unsigned char)Buffer[60],(unsigned char)Buffer[59],
+        (unsigned char)Buffer[58],(unsigned char)Buffer[57]);
+
+    DEBUG((EFI_D_ERROR,"WifiMac=%02x:%02x:%02x:%02x:%02x:%02x\n",
+        (unsigned char)Buffer[62],(unsigned char)Buffer[61],
+        (unsigned char)Buffer[60],(unsigned char)Buffer[59],
+        (unsigned char)Buffer[58],(unsigned char)Buffer[57]));
+    return  0;
+}
+//- FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+
 EFI_STATUS
 TargetPauseForBatteryCharge (BOOLEAN *BatteryStatus)
 {
@@ -555,6 +576,12 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
     Src = Param->SoftSkuStr;
     AsciiStrCatS (Dst, MaxCmdLineLen, Src);
   }
+
+  //+ FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+  Src = WifiMac;
+  AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  //- FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+
   return EFI_SUCCESS;
 }
 
@@ -752,6 +779,12 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
                    "%a%d", SoftSkuIdxStr , SkuIdx);
       CmdLineLen += AsciiStrLen (SoftSkuStr);
   }
+
+  //+ FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+  SetWifiMac(TraceabilityInfo);
+  CmdLineLen += AsciiStrLen (WifiMac);
+  //- FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+
   /* 1 extra byte for NULL */
   CmdLineLen += 1;
 
