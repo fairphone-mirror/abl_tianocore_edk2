@@ -88,6 +88,10 @@ STATIC CHAR8 WifiMac[27] = {0};
 extern CHAR8 TraceabilityInfo[512];
 //-FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
 
+//+ FP5-287. add ro.boot.insecure. liquan.zhou.t2m. 20230211
+STATIC CHAR8 InsecureCmdLine[30] = {0};
+//- FP5-287. add ro.boot.insecure. liquan.zhou.t2m. 20230211
+
 //+ FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
 STATIC EFI_STATUS SetWifiMac( CHAR8  *Buffer)
 {
@@ -582,6 +586,11 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
   AsciiStrCatS (Dst, MaxCmdLineLen, Src);
   //- FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
 
+  //+ FP5-287. add ro.boot.insecure. liquan.zhou.t2m. 20230211
+  Src = InsecureCmdLine;
+  AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  //- FP5-287. add ro.boot.insecure. liquan.zhou.t2m. 20230211
+
   return EFI_SUCCESS;
 }
 
@@ -784,6 +793,15 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
   SetWifiMac(TraceabilityInfo);
   CmdLineLen += AsciiStrLen (WifiMac);
   //- FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+
+  //+ FP5-287. add ro.boot.insecure. liquan.zhou.t2m. 20230211
+  if (IsSecureBootEnabled()) {
+    AsciiSPrint(InsecureCmdLine, 30, " androidboot.insecure=false");
+  } else {
+    AsciiSPrint(InsecureCmdLine, 30, " androidboot.insecure=true");
+  }
+  CmdLineLen += AsciiStrLen (InsecureCmdLine);
+  //- FP5-287. add ro.boot.insecure. liquan.zhou.t2m. 20230211
 
   /* 1 extra byte for NULL */
   CmdLineLen += 1;
