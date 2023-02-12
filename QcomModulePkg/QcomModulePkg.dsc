@@ -119,6 +119,13 @@
   !else
       GCC:*_*_*_CC_FLAGS = -DUSER_BUILD_VARIANT
   !endif
+
+  #+ FP5-279. lock device at first download MINI releases. liquan.zhou.t2m. 20230212
+  !if $(MINI_BUILD_VARIANT) == 1
+      GCC:*_*_*_CC_FLAGS = -DMINI_BUILD_VARIANT
+  !endif
+  #- FP5-279. lock device at first download MINI releases. liquan.zhou.t2m. 20230212
+
   !if $(ENABLE_LE_VARIANT) == 1
       GCC:*_*_*_CC_FLAGS = -DENABLE_LE_VARIANT
   !endif

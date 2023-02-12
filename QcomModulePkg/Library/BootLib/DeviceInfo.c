@@ -290,8 +290,17 @@ EFI_STATUS DeviceInfoInit (VOID)
       DevInfo.is_unlocked = FALSE;
       DevInfo.is_unlock_critical = FALSE;
     } else {
+
+//+ FP5-279. lock device at first download MINI releases. liquan.zhou.t2m. 20230212
+#if defined(MINI_BUILD_VARIANT)
+    DevInfo.is_unlocked = FALSE;
+    DevInfo.is_unlock_critical = FALSE;
+#else
       DevInfo.is_unlocked = TRUE;
       DevInfo.is_unlock_critical = TRUE;
+#endif
+//- FP5-279. lock device at first download MINI releases. liquan.zhou.t2m. 20230212
+
     }
     DevInfo.is_charger_screen_enabled = FALSE;
     DevInfo.verity_mode = TRUE;
