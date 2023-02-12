@@ -1073,12 +1073,17 @@ WriteGpt (INT32 Lun, UINT32 Sz, UINT8 *Gpt)
     DEBUG ((EFI_D_ERROR, "Failed to patch GPT\n"));
     return Ret;
   }
+
+  //+ FP5-291, don't erase partitions when flash gpt, liquan.zhou.t2m, 20230212
+  #if 0
   /* Erase the entire card */
   Status = ErasePartition (BlockIo, BlockIoHandle[0].Handle);
   if (Status != EFI_SUCCESS) {
     DEBUG ((EFI_D_ERROR, "Error erasing the storage device: %r\n", Status));
     return FAILURE;
   }
+  #endif
+  //- FP5-291, don't erase partitions when flash gpt, liquan.zhou.t2m, 20230212
 
   /* write the protective MBR */
   Status = BlockIo->WriteBlocks (BlockIo, BlockIo->Media->MediaId, 0, BlkSz,
