@@ -117,6 +117,9 @@
   !if $(USER_BUILD_VARIANT) == 0
       GCC:*_*_*_CC_FLAGS = -DENABLE_UPDATE_PARTITIONS_CMDS -DENABLE_BOOT_CMD -DENABLE_DEVICE_CRITICAL_LOCK_UNLOCK_CMDS
   !else
+      #+ FP5-292. user releases need download images by fastboot. liquan.zhou.t2m. 20230214
+      GCC:*_*_*_CC_FLAGS = -DENABLE_UPDATE_PARTITIONS_CMDS -DENABLE_BOOT_CMD -DENABLE_DEVICE_CRITICAL_LOCK_UNLOCK_CMDS
+      #- FP5-292. user releases need download images by fastboot. liquan.zhou.t2m. 20230214
       GCC:*_*_*_CC_FLAGS = -DUSER_BUILD_VARIANT
   !endif
 
