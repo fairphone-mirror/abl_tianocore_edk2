@@ -83,6 +83,10 @@ STATIC CHAR8 *FstabSuffixDefault = "default";
 #define MAX_SOFTSKU_IDX_STR 23
 STATIC CHAR8 *SoftSkuIdxStr = " socinfo.softsku_idx=";
 
+//FP5-283, innproduct flag, liquan.zhou.t2m, 20230215.
+// Task: 9949950
+STATIC CONST CHAR8 *InproductFlagCmdLine = " androidboot.inproductionflag=true";
+
 //+FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
 STATIC CHAR8 WifiMac[27] = {0};
 extern CHAR8 TraceabilityInfo[512];
@@ -581,6 +585,14 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
     AsciiStrCatS (Dst, MaxCmdLineLen, Src);
   }
 
+  //+ FP5-283, innproduct flag, liquan.zhou.t2m, 20230215.
+  // Task: 9949950
+  if (OemInproductFlag->inproductionflag == 1) {
+    Src = InproductFlagCmdLine;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  }
+  //- FP5-283, innproduct flag, liquan.zhou.t2m, 20230215.
+
   //+ FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
   Src = WifiMac;
   AsciiStrCatS (Dst, MaxCmdLineLen, Src);
@@ -788,6 +800,13 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
                    "%a%d", SoftSkuIdxStr , SkuIdx);
       CmdLineLen += AsciiStrLen (SoftSkuStr);
   }
+
+  //+ FP5-283, innproduct flag, liquan.zhou.t2m, 20230215.
+  // Task: 9949950
+  if (OemInproductFlag->inproductionflag == 1) {
+    CmdLineLen += AsciiStrLen (InproductFlagCmdLine);
+  }
+  //- FP5-283, innproduct flag, liquan.zhou.t2m, 20230215.
 
   //+ FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
   SetWifiMac(TraceabilityInfo);
