@@ -39,6 +39,8 @@
 #include <Protocol/EFIPlatformInfoTypes.h>
 
 #include <LinuxLoaderLib.h>
+/* FP5-261 using CPU serial number as device SN modified by yushixian 20230221*/
+#define CPU_SERIAL_NUM  *(UINT32 *)0x00786134;
 
 STATIC struct BoardInfo platform_board_info;
 
@@ -610,14 +612,16 @@ BoardSerialNum (CHAR8 *StrSerialNum, UINT32 Len)
 
   if (CardInfo->GetCardInfo (CardInfo, &CardInfoData) == EFI_SUCCESS) {
     if (Type == UFS) {
-      Status = gBS->CalculateCrc32 (CardInfoData.product_serial_num,
+/* FP5-261 using CPU serial number as device SN modified by yushixian 20230221*/
+     /* Status = gBS->CalculateCrc32 (CardInfoData.product_serial_num,
                                     CardInfoData.serial_num_len, &SerialNo);
       if (Status != EFI_SUCCESS) {
         DEBUG ((EFI_D_ERROR,
                 "Error calculating Crc of the unicode serial number: %x\n",
                 Status));
         return Status;
-      }
+      }*/
+      SerialNo = CPU_SERIAL_NUM;
       AsciiSPrint (StrSerialNum, Len, "%x", SerialNo);
     } else {
       AsciiSPrint (StrSerialNum, Len, "%x",
