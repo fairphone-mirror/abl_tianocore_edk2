@@ -46,6 +46,7 @@
 #include "UpdateCmdLine.h"
 #include "Recovery.h"
 #include "LECmdLine.h"
+#include <fpconfig_persist.h>
 
 STATIC CONST CHAR8 *DynamicBootDeviceCmdLine =
                                       " androidboot.boot_devices=soc/";
@@ -86,6 +87,11 @@ STATIC CHAR8 *SoftSkuIdxStr = " socinfo.softsku_idx=";
 //FP5-283, innproduct flag, liquan.zhou.t2m, 20230215.
 // Task: 9949950
 STATIC CONST CHAR8 *InproductFlagCmdLine = " androidboot.inproductionflag=true";
+
+//+FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+STATIC CONST CHAR8 *FPCustomId= " androidboot.CID=";
+extern FPConfig_t FPConfig;
+//-FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
 
 //+FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
 STATIC CHAR8 WifiMac[27] = {0};
@@ -593,6 +599,15 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
   }
   //- FP5-283, innproduct flag, liquan.zhou.t2m, 20230215.
 
+  //+FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+  if (AsciiStrLen(FPConfig.cid) >= 0) {
+    Src = FPCustomId;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+    Src = FPConfig.cid;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  }
+  //-FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+
   //+ FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
   Src = WifiMac;
   AsciiStrCatS (Dst, MaxCmdLineLen, Src);
@@ -807,6 +822,12 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
     CmdLineLen += AsciiStrLen (InproductFlagCmdLine);
   }
   //- FP5-283, innproduct flag, liquan.zhou.t2m, 20230215.
+
+  //FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+  if (AsciiStrLen(FPConfig.cid) >= 0) {
+    CmdLineLen += AsciiStrLen (FPCustomId);
+    CmdLineLen += AsciiStrLen (FPConfig.cid);
+  }
 
   //+ FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
   SetWifiMac(TraceabilityInfo);
