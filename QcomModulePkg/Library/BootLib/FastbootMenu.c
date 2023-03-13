@@ -40,6 +40,8 @@
 #include <Protocol/EFIVerifiedBoot.h>
 #include <Uefi.h>
 
+extern CHAR8 TraceabilityInfo[512]; //FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
+
 STATIC OPTION_MENU_INFO gMenuInfo;
 
 STATIC MENU_MSG_INFO mFastbootOptionTitle[] = {
@@ -145,6 +147,32 @@ STATIC MENU_MSG_INFO mFastbootCommonMsgInfo[] = {
      COMMON,
      0,
      NOACTION},
+     //+FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
+     //8
+    {{"IMEI - "},
+     COMMON_FACTOR,
+     BGR_WHITE,
+     BGR_BLACK,
+     COMMON,
+     0,
+     NOACTION},
+     //9
+    {{"MEMORY MODEL - "},
+     COMMON_FACTOR,
+     BGR_WHITE,
+     BGR_BLACK,
+     COMMON,
+     0,
+     NOACTION},
+     //10
+    {{"MEMORY SIZE - "},
+     COMMON_FACTOR,
+     BGR_WHITE,
+     BGR_BLACK,
+     COMMON,
+     0,
+     NOACTION},
+     //-FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
     {{"DEVICE STATE - "},
      COMMON_FACTOR,
      BGR_RED,
@@ -295,6 +323,40 @@ FastbootMenuShowScreen (OPTION_MENU_INFO *OptionMenuInfo)
           IsSecureBootEnabled () ? AsciiStrLen ("yes") : AsciiStrLen ("no"));
       break;
     case 8:
+      //+FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
+      /* Get IMEI */
+      ZeroMem (StrTemp, sizeof (StrTemp));
+      AsciiSPrint(StrTemp, 15, "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c",
+                    TraceabilityInfo[36], TraceabilityInfo[37], TraceabilityInfo[38],
+                    TraceabilityInfo[39], TraceabilityInfo[40], TraceabilityInfo[41],
+                    TraceabilityInfo[42], TraceabilityInfo[43], TraceabilityInfo[44],
+                    TraceabilityInfo[45], TraceabilityInfo[46], TraceabilityInfo[47],
+                    TraceabilityInfo[48], TraceabilityInfo[49], TraceabilityInfo[50]);
+      AsciiStrnCatS (
+          mFastbootCommonMsgInfo[i].Msg, sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp, sizeof (StrTemp));
+      break;
+    case 9:
+      /* Get Memory Model*/
+      ZeroMem (StrTemp, sizeof (StrTemp));
+      GetMemoryManufactureData (StrTemp, MAX_RSP_SIZE);
+      AsciiStrnCatS (
+          mFastbootCommonMsgInfo[i].Msg, sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp, sizeof(StrTemp));
+      break;
+    case 10:
+      /* Get Memory size */
+      ZeroMem (StrTemp, sizeof (StrTemp));
+      ZeroMem (StrTemp1, sizeof (StrTemp1));
+      GetRamstorageSize(StrTemp,MAX_RSP_SIZE);
+      GetRomstorageSize(StrTemp1,MAX_RSP_SIZE);
+      AsciiStrnCatS (
+          mFastbootCommonMsgInfo[i].Msg, sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp, sizeof (StrTemp));
+      AsciiStrnCatS (
+          mFastbootCommonMsgInfo[i].Msg, sizeof (mFastbootCommonMsgInfo[i].Msg), " + ", AsciiStrLen(" + "));
+      AsciiStrnCatS (
+          mFastbootCommonMsgInfo[i].Msg, sizeof (mFastbootCommonMsgInfo[i].Msg), StrTemp1, sizeof (StrTemp1));
+      break;
+    case 11:
+    //-FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
       /* Get device status */
       AsciiStrnCatS (
           mFastbootCommonMsgInfo[i].Msg, sizeof (mFastbootCommonMsgInfo[i].Msg),

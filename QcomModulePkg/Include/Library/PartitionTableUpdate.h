@@ -248,4 +248,8 @@ EFI_STATUS ClearUnbootable (VOID);
 BOOLEAN IsABRetryCountUpdateRequired (VOID);
 UINT32 PartitionVerifyMibibImage (UINT8 *Image);
 UINT64 GetPartitionSize (EFI_BLOCK_IO_PROTOCOL *BlockIo);
+//+FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
+UINT64 GetAllPartitionSize ();
+//-FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
+
 #endif
