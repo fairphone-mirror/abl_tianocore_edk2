@@ -122,6 +122,11 @@ EFI_STATUS ReadRamPartitions (RamPartitionEntry **RamPartitions,
                   UINT32 *NumPartitions);
 EFI_STATUS GetGranuleSize (UINT32 *MinPasrGranuleSize);
 VOID GetPageSize (UINT32 *PageSize);
+//+FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
+EFI_STATUS GetMemoryManufactureData (CHAR8 *Memory_info, UINT32 Len);
+VOID GetRomstorageSize (CHAR8 *Romstorage, UINT32 Len);
+VOID GetRamstorageSize (CHAR8 *Ramstorage, UINT32 Len);
+//-FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
 EFI_STATUS BoardDdrType (UINT32 *Type);
 UINT32 BoardPlatformHlosSubType (VOID);
 VOID BoardSoftSku (EFI_SOFT_SKU_ID *SkuId);

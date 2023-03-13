@@ -37,10 +37,16 @@
 #include <Library/UpdateDeviceTree.h>
 #include <Protocol/EFICardInfo.h>
 #include <Protocol/EFIPlatformInfoTypes.h>
+#include <Library/PartitionTableUpdate.h>  //FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
 
 #include <LinuxLoaderLib.h>
 /* FP5-261 using CPU serial number as device SN modified by yushixian 20230221*/
 #define CPU_SERIAL_NUM  *(UINT32 *)0x00786134;
+
+//+FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
+#define Ture 1
+#define False 0
+//-FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
 
 STATIC struct BoardInfo platform_board_info;
 
@@ -430,6 +436,115 @@ GetPageSize (UINT32 *PageSize)
     *PageSize = BlkIo->Media->BlockSize;
   }
 }
+
+//+FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
+UINT32
+SizeEmbellish(UINT64 storagesize,CHAR8 *unit,CHAR8 isram){
+    UINT32 i,j;
+    UINT64 tempsize;
+    CHAR8 sizeunit[]={' ','K','M','G','T'};
+    tempsize=storagesize;
+
+    for(j=0;tempsize >= 1024;j++){
+        tempsize = tempsize >> 10;
+    }
+    if(j > 4){
+        DEBUG ((EFI_D_ERROR, "storagesize too big,more than TB\n"));
+        return -1;
+    }else{
+        *unit=sizeunit[j];
+        DEBUG ((EFI_D_INFO, "unit is %c\n",*unit));
+    }
+
+    for ( i=0; i<10; i++) {
+        if ((1 << i) >=  tempsize) {
+            tempsize = 1 << i;
+            break;
+        }
+    }
+    return tempsize;
+}
+
+VOID
+GetRomstorageSize (CHAR8 *Romstorage, UINT32 Len)
+{
+	UINT64 Romsize;
+	CHAR8  unit=' ';
+
+	Romsize = SizeEmbellish(GetAllPartitionSize(),&unit,False);
+	AsciiSPrint (Romstorage, Len, "%ld%cB", Romsize,unit);
+}
+
+VOID
+GetRamstorageSize (CHAR8 *Ramstorage, UINT32 Len)
+{
+  EFI_STATUS Status = EFI_NOT_FOUND;
+  RamPartitionEntry *RamPartitions = NULL;
+  UINT32 NumPartitions = 0;
+  UINT64 partitionlength = 0;
+  UINT32 i = 0;
+  CHAR8  unit=' ';
+
+  Status = ReadRamPartitions (&RamPartitions, &NumPartitions);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((EFI_D_ERROR, "Error returned from ReadRamPartitions %r\n", Status));
+    return ;
+  }
+
+  for (i = 0; i < NumPartitions; i++) {
+	partitionlength += RamPartitions[i].AvailableLength;
+  }
+
+  DEBUG ((EFI_D_INFO, "partitionlength: 0x%x\n", partitionlength));
+
+  partitionlength = SizeEmbellish(partitionlength,&unit,Ture);
+  AsciiSPrint (Ramstorage, Len, "%ld%cB", partitionlength, unit);
+}
+
+EFI_STATUS
+GetMemoryManufactureData (CHAR8 *Memory_info, UINT32 Len)
+{
+  EFI_STATUS Status = EFI_INVALID_PARAMETER;
+  MEM_CARD_INFO CardInfoData;
+  EFI_MEM_CARDINFO_PROTOCOL *CardInfo;
+  HandleInfo HandleInfoList[HANDLE_MAX_INFO_LIST];
+  UINT32 MaxHandles = ARRAY_SIZE (HandleInfoList);
+  MemCardType Type = EMMC;
+
+  Type = CheckRootDeviceType ();
+  if (Type == UNKNOWN)
+    return EFI_NOT_FOUND;
+
+  Status = GetDeviceHandleInfo (HandleInfoList, MaxHandles, Type);
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+
+  Status =
+      gBS->HandleProtocol (HandleInfoList[0].Handle,
+                           &gEfiMemCardInfoProtocolGuid, (VOID **)&CardInfo);
+  if (Status != EFI_SUCCESS) {
+    DEBUG ((EFI_D_ERROR, "Error locating MemCardInfoProtocol:%x\n", Status));
+    return Status;
+  }
+
+  if (CardInfo->GetCardInfo (CardInfo, &CardInfoData) == EFI_SUCCESS) {
+    if (Type == UFS) {
+      UINT32 j = 0;
+      UINT8 vid_buf[32];
+      for (j=0;j<28;j++)
+      {
+        vid_buf[j] = CardInfoData.inquiry_str[j] != 0 ? CardInfoData.inquiry_str[j] : ' ';
+      }
+      vid_buf[j] = '\0';
+      AsciiStrnCatS (Memory_info, Len, (CHAR8 *)vid_buf, sizeof (vid_buf));
+    } else {
+      AsciiStrnCatS (Memory_info, Len, "UNKNOWN", AsciiStrLen ("UNKNOWN"));
+    }
+  }
+  return Status;
+}
+//-FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
 
 UINT32
 BoardPmicModel (UINT32 PmicDeviceIndex)
