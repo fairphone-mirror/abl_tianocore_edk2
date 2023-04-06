@@ -40,12 +40,15 @@
 #define DEBUG_CMD_ALL "debug-0"
 #define DEBUG_CMD_ROOT "debug-1"
 #define DEBUG_CMD_RAMDUMP "debug-2"
+//[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com
+#define DEBUG_CMD_UART "debug-3"
 
 typedef enum _t2m_debug_mode_t {
   T2M_DEBUG_NONE,
   T2M_DEBUG_ALL,
   T2M_DEBUG_ROOT,
   T2M_DEBUG_RAMDUMP,
+  T2M_DEBUG_UART,//[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com
 } t2m_debug_mode_t;
 
 /* Recovery Message */

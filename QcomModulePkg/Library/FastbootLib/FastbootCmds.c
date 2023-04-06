@@ -2621,7 +2621,11 @@ CmdEnableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
     Status = WriteRecoveryMessage (DEBUG_CMD_RAMDUMP);
   } else if (!(strncmp(Arg, " root", 5))) {
     Status = WriteRecoveryMessage (DEBUG_CMD_ROOT);
-  } else {
+    //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+  } else if (!(strncmp(Arg, " uart", 5))) {
+    Status = WriteRecoveryMessage (DEBUG_CMD_UART);
+    //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
+  }else {
     FastbootFail ("Failed to set debug mode.");
     return;
   }

@@ -409,6 +409,9 @@ IsBootIntoDebug (t2m_debug_mode_t *t2m_debug_mode)
   CONST CHAR8 *DebugCmdAll = DEBUG_CMD_ALL;
   CONST CHAR8 *DebugCmdRoot = DEBUG_CMD_ROOT;
   CONST CHAR8 *DebugCmdRamdump = DEBUG_CMD_RAMDUMP;
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+  CONST CHAR8 *DebugCmdUart = DEBUG_CMD_UART;
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
   CHAR8 *DebugData = NULL;
   EFI_STATUS Status;
   EFI_GUID Ptype = gEfiMiscPartitionGuid;
@@ -438,6 +441,11 @@ IsBootIntoDebug (t2m_debug_mode_t *t2m_debug_mode)
   } else if (!AsciiStrnCmp (DebugData, DebugCmdRamdump, AsciiStrLen (DebugCmdRamdump))) {
     Status = EFI_SUCCESS;
     *t2m_debug_mode = T2M_DEBUG_RAMDUMP;
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+  } else if (!AsciiStrnCmp (DebugData, DebugCmdUart, AsciiStrLen (DebugCmdUart))) {
+    Status = EFI_SUCCESS;
+    *t2m_debug_mode = T2M_DEBUG_UART;
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
   } else {
     Status = EFI_NOT_FOUND;
     *t2m_debug_mode = T2M_DEBUG_NONE;
