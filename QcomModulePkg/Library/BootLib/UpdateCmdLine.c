@@ -634,8 +634,10 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
   if (HasT2MDebugFlag == EFI_SUCCESS) {
     switch (t2m_debug_mode) {
       case T2M_DEBUG_ALL:
+#ifndef USER_BUILD_VARIANT
         Src = T2MDebugRootEnable;
         AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+#endif
         Src = T2MDebugDownloadEnable;
         AsciiStrCatS (Dst, MaxCmdLineLen, Src);
         //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
@@ -894,7 +896,9 @@ Define  TARGET_BUILD_MMITEST in AndroidBoot.mk and makefile
     DEBUG ((EFI_D_VERBOSE, "T2M Debug cookie found.\n"));
     switch (t2m_debug_mode) {
       case T2M_DEBUG_ALL:
+#ifndef USER_BUILD_VARIANT
         CmdLineLen += AsciiStrLen (T2MDebugRootEnable);
+#endif
         CmdLineLen += AsciiStrLen (T2MDebugDownloadEnable);
         //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
         IsUartEnable = TRUE;

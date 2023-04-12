@@ -2564,6 +2564,7 @@ CmdReboot (IN CONST CHAR8 *arg, IN VOID *data, IN UINT32 sz)
   FastbootFail ("Failed to reboot");
 }
 
+#ifndef USER_BUILD_VARIANT
 //+FP4-2479, add debug function in bootloader for user release, liquan.zhou.t2m, 20210813
 STATIC VOID
 CmdOemAllowFlash(IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
@@ -2575,6 +2576,7 @@ CmdOemAllowFlash(IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
     }
     FastbootFail ("Failed to allow flash");
 }
+#endif
 
 STATIC VOID
 CmdClearRollbackIndex (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
@@ -2596,6 +2598,7 @@ CmdClearRollbackIndex (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
 //-FP4-2479, add debug function in bootloader for user release, liquan.zhou.t2m, 20210813
 
 //+FP4-492, root for user, liquan.zhou.t2m, 20210531
+#ifndef USER_BUILD_VARIANT
 STATIC VOID
 CmdEnableDebugRoot (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
 {
@@ -2608,6 +2611,7 @@ CmdEnableDebugRoot (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
   }
   FastbootOkay ("");
 }
+#endif
 
 //+FP4-492, root for user, liquan.zhou.t2m, 20210531
 STATIC VOID
@@ -2619,13 +2623,18 @@ CmdEnableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
     Status = WriteRecoveryMessage (DEBUG_CMD_ALL);
   } else if (!(strncmp(Arg, " ramdump", 8))) {
     Status = WriteRecoveryMessage (DEBUG_CMD_RAMDUMP);
-  } else if (!(strncmp(Arg, " root", 5))) {
+  } 
+  #ifndef USER_BUILD_VARIANT
+  else if (!(strncmp(Arg, " root", 5))) {
     Status = WriteRecoveryMessage (DEBUG_CMD_ROOT);
-    //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
-  } else if (!(strncmp(Arg, " uart", 5))) {
+  }
+  #endif
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+  else if (!(strncmp(Arg, " uart", 5))) {
     Status = WriteRecoveryMessage (DEBUG_CMD_UART);
-    //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
-  }else {
+  }
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
+  else {
     FastbootFail ("Failed to set debug mode.");
     return;
   }
@@ -3767,7 +3776,9 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
       {"flashing unlock", CmdFlashingUnlock},
       {"flashing lock", CmdFlashingLock},
       //+FP4-2479, add debug function in bootloader for user release, liquan.zhou.t2m, 20210813
+#ifndef USER_BUILD_VARIANT
       {"oem allow-flash", CmdOemAllowFlash},
+#endif
       {"oem clear-rollback-index", CmdClearRollbackIndex},
       //-FP4-2479
 #endif
@@ -3796,7 +3807,9 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
       {"reboot-recovery", CmdRebootRecovery},
       {"reboot-fastboot", CmdRebootFastboot},
       //+FP4-492, root for user, liquan.zhou.t2m, 20210531
+#ifndef USER_BUILD_VARIANT
       {"oem enable-root", CmdEnableDebugRoot},
+#endif
       {"oem disable-root", CmdDisableDebug},
       //-FP4-492, root for user, liquan.zhou.t2m, 20210531
       {"oem enable-debug", CmdEnableDebug},
