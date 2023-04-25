@@ -302,8 +302,7 @@ EFI_STATUS DeviceInfoInit (VOID)
 //- FP5-279. lock device at first download MINI releases. liquan.zhou.t2m. 20230212
 
     }
-//modify is_charger_screen_enabled from FALSE to TURE to enable power off charge by yushixian 20230423
-    DevInfo.is_charger_screen_enabled = TRUE;  //FALSE
+    DevInfo.is_charger_screen_enabled = FALSE;
     DevInfo.verity_mode = TRUE;
     Status =
         ReadWriteDeviceInfo (WRITE_CONFIG, (VOID *)&DevInfo, sizeof (DevInfo));
@@ -312,6 +311,8 @@ EFI_STATUS DeviceInfoInit (VOID)
       return Status;
     }
   }
+      DEBUG ((EFI_D_ERROR, "---------------is_charger_screen_enabled true --------\n"));
+  DevInfo.is_charger_screen_enabled = TRUE;
 
   return Status;
 }
