@@ -347,6 +347,9 @@ GetFPConfigPartitionInfo ()
       gBS->SetMem (Buff, sizeof (BuffSize), 0);
       gBS->CopyMem (Buff->magic, FPCONFIG_MAGIC, FPCONFIG_MAGIC_SIZE);
       gBS->CopyMem (Buff->cid, "STD", FPCONFIG_CID_SIZE);
+      //+FP5-830, read Locale from fpconfig, tianwen.zhang@t2mobile.com start
+      gBS->CopyMem (Buff->locale, "en", FPCONFIG_LOCALE_SIZE);
+      //+FP5-830, read Locale from fpconfig, tianwen.zhang@t2mobile.com end
       Status = BlockIo->WriteBlocks (BlockIo, BlockIo->Media->MediaId,
                   DataOffset, BuffSize, (VOID *) Buff);
       if (Status == EFI_SUCCESS) {

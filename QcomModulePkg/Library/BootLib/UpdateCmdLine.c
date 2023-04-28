@@ -90,6 +90,7 @@ STATIC CONST CHAR8 *InproductFlagCmdLine = " androidboot.inproductionflag=true";
 
 //+FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
 STATIC CONST CHAR8 *FPCustomId= " androidboot.CID=";
+STATIC CONST CHAR8 *FPLocale= " androidboot.LOCALE=";
 extern FPConfig_t FPConfig;
 //-FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
 
@@ -607,6 +608,15 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
     AsciiStrCatS (Dst, MaxCmdLineLen, Src);
   }
   //-FP4-272, read Custom ID from fpconfig, liquan.zhou.t2m, 20210518
+  
+  //+FP5-830, read Locale from fpconfig, tianwen.zhang@t2mobile.com
+  if (AsciiStrLen(FPConfig.locale) >= 0) {
+    Src = FPLocale;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+    Src = FPConfig.locale;
+    AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+  }
+  //+FP5-830, read Locale from fpconfig, tianwen.zhang@t2mobile.com
 
   //+ FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
   Src = WifiMac;
@@ -829,6 +839,13 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
     CmdLineLen += AsciiStrLen (FPConfig.cid);
   }
 
+  //+FP5-830, read Locale from fpconfig, tianwen.zhang@t2mobile.com start
+  if (AsciiStrLen(FPConfig.locale) >= 0) {
+    CmdLineLen += AsciiStrLen (FPLocale);
+    CmdLineLen += AsciiStrLen (FPConfig.locale);
+  }
+  //+FP5-830, read Locale from fpconfig, tianwen.zhang@t2mobile.com end
+  
   //+ FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
   SetWifiMac(TraceabilityInfo);
   CmdLineLen += AsciiStrLen (WifiMac);
