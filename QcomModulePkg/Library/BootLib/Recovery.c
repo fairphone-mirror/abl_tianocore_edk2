@@ -401,3 +401,59 @@ GetFfbmCommand (CHAR8 *FfbmString, UINT32 Sz)
 
   return Status;
 }
+
+//+FP4-492, root for user, liquan.zhou.t2m, 20210531
+EFI_STATUS
+IsBootIntoDebug (t2m_debug_mode_t *t2m_debug_mode)
+{
+  CONST CHAR8 *DebugCmdAll = DEBUG_CMD_ALL;
+  CONST CHAR8 *DebugCmdRoot = DEBUG_CMD_ROOT;
+  CONST CHAR8 *DebugCmdRamdump = DEBUG_CMD_RAMDUMP;
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+  CONST CHAR8 *DebugCmdUart = DEBUG_CMD_UART;
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
+  CHAR8 *DebugData = NULL;
+  EFI_STATUS Status;
+  EFI_GUID Ptype = gEfiMiscPartitionGuid;
+  MemCardType CardType = UNKNOWN;
+
+  CardType = CheckRootDeviceType ();
+  if (CardType == NAND) {
+    Status = GetNandMiscPartiGuid (&Ptype);
+    if (Status != EFI_SUCCESS) {
+      return Status;
+    }
+  }
+
+  Status = ReadFromPartition (&Ptype, (VOID **)&DebugData, AsciiStrLen (DebugCmdAll));
+  if (Status != EFI_SUCCESS) {
+    DEBUG ((EFI_D_ERROR, "Error Reading Debug info from misc: %r\n", Status));
+    return Status;
+  }
+
+  DebugData[AsciiStrLen (DebugCmdAll)] = '\0';
+  if (!AsciiStrnCmp (DebugData, DebugCmdAll, AsciiStrLen (DebugCmdAll))) {
+    Status = EFI_SUCCESS;
+    *t2m_debug_mode = T2M_DEBUG_ALL;
+  } else if (!AsciiStrnCmp (DebugData, DebugCmdRoot, AsciiStrLen (DebugCmdRoot))) {
+    Status = EFI_SUCCESS;
+    *t2m_debug_mode = T2M_DEBUG_ROOT;
+  } else if (!AsciiStrnCmp (DebugData, DebugCmdRamdump, AsciiStrLen (DebugCmdRamdump))) {
+    Status = EFI_SUCCESS;
+    *t2m_debug_mode = T2M_DEBUG_RAMDUMP;
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+  } else if (!AsciiStrnCmp (DebugData, DebugCmdUart, AsciiStrLen (DebugCmdUart))) {
+    Status = EFI_SUCCESS;
+    *t2m_debug_mode = T2M_DEBUG_UART;
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
+  } else {
+    Status = EFI_NOT_FOUND;
+    *t2m_debug_mode = T2M_DEBUG_NONE;
+  }
+
+  FreePool (DebugData);
+  DebugData = NULL;
+
+  return Status;
+}
+//-

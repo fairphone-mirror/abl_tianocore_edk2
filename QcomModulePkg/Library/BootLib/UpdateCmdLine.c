@@ -47,6 +47,7 @@
 #include "Recovery.h"
 #include "LECmdLine.h"
 #include <fpconfig_persist.h>
+#include "BootLinux.h"
 
 STATIC CONST CHAR8 *DynamicBootDeviceCmdLine =
                                       " androidboot.boot_devices=soc/";
@@ -104,6 +105,24 @@ STATIC CHAR8 InsecureCmdLine[30] = {0};
 //- FP5-287. add ro.boot.insecure. liquan.zhou.t2m. 20230211
 
 //+ FP5-286, read wifi mac from traceability, liquan.zhou.t2m, 20230211
+
+//+FP4-492, root for user, liquan.zhou.t2m, 20210531
+STATIC CONST CHAR8 *T2MDebugRootEnable = " androidboot.t2mdebugflag=true";
+EFI_STATUS HasT2MDebugFlag;
+//-FP4-492, root for user, liquan.zhou.t2m, 20210531
+t2m_debug_mode_t t2m_debug_mode = T2M_DEBUG_NONE;
+STATIC CONST CHAR8 *T2MDebugDownloadEnable = " msm_poweroff.t2m_download_enable=1";
+
+//[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+#ifdef USER_BUILD_VARIANT
+STATIC BOOLEAN IsUartEnable = FALSE;
+#else
+STATIC BOOLEAN IsUartEnable = TRUE;
+#endif
+STATIC CONST CHAR8 *MsmUartConfigCmdLine = " androidboot.uartflag=true console=ttyMSM0,115200,n8 androidboot.console=ttyMSM0";
+STATIC CONST CHAR8 *HslUartConfigCmdLine = " androidboot.uartflag=false console=ttyHSL0,115200,n8 androidboot.console=ttyHSL0";
+//[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
+
 STATIC EFI_STATUS SetWifiMac( CHAR8  *Buffer)
 {
     AsciiSPrint(WifiMac, 27, " WifiMac=%02x:%02x:%02x:%02x:%02x:%02x",
@@ -628,6 +647,48 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
   AsciiStrCatS (Dst, MaxCmdLineLen, Src);
   //- FP5-287. add ro.boot.insecure. liquan.zhou.t2m. 20230211
 
+
+  //+FP4-492, root for user, liquan.zhou.t2m, 20210531
+  if (HasT2MDebugFlag == EFI_SUCCESS) {
+    switch (t2m_debug_mode) {
+      case T2M_DEBUG_ALL:
+#if 1
+        Src = T2MDebugRootEnable;
+        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+#endif
+        Src = T2MDebugDownloadEnable;
+        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+        //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+        IsUartEnable = TRUE;
+        //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
+        break;
+      case T2M_DEBUG_ROOT:
+        Src = T2MDebugRootEnable;
+        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+        break;
+      case T2M_DEBUG_RAMDUMP:
+        Src = T2MDebugDownloadEnable;
+        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
+        break;
+      //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+      case T2M_DEBUG_UART:
+        IsUartEnable = TRUE;
+        break;
+      //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
+      default:
+        break;
+    }
+  }
+  //-FP4-492, root for user, liquan.zhou.t2m, 20210531
+
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+  if (IsUartEnable) {
+    AsciiStrCatS (Dst, MaxCmdLineLen,MsmUartConfigCmdLine);
+  } else {
+    AsciiStrCatS (Dst, MaxCmdLineLen,HslUartConfigCmdLine);
+  }
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
+
   return EFI_SUCCESS;
 }
 
@@ -859,6 +920,45 @@ UpdateCmdLine (CONST CHAR8 *CmdLine,
   }
   CmdLineLen += AsciiStrLen (InsecureCmdLine);
   //- FP5-287. add ro.boot.insecure. liquan.zhou.t2m. 20230211
+
+  //FP4-492, root for user, liquan.zhou.t2m, 20210531
+  HasT2MDebugFlag = IsBootIntoDebug(& t2m_debug_mode);
+  if (HasT2MDebugFlag == EFI_SUCCESS) {
+    DEBUG ((EFI_D_VERBOSE, "T2M Debug cookie found.\n"));
+    switch (t2m_debug_mode) {
+      case T2M_DEBUG_ALL:
+#if 1
+        CmdLineLen += AsciiStrLen (T2MDebugRootEnable);
+#endif
+        CmdLineLen += AsciiStrLen (T2MDebugDownloadEnable);
+        //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+        IsUartEnable = TRUE;
+        //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
+        break;
+      case T2M_DEBUG_ROOT:
+        CmdLineLen += AsciiStrLen (T2MDebugRootEnable);
+        break;
+      case T2M_DEBUG_RAMDUMP:
+        CmdLineLen += AsciiStrLen (T2MDebugDownloadEnable);
+        break;
+      //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+      case T2M_DEBUG_UART:
+        IsUartEnable = TRUE;
+        break;
+      //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
+      default:
+        break;
+    }
+  }
+
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+  if (IsUartEnable) {
+    CmdLineLen +=AsciiStrLen (MsmUartConfigCmdLine);
+  } else {
+    CmdLineLen +=AsciiStrLen (HslUartConfigCmdLine);
+  }
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
+
 
   /* 1 extra byte for NULL */
   CmdLineLen += 1;
