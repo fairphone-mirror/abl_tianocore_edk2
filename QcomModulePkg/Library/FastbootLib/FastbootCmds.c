@@ -2609,6 +2609,69 @@ CmdOemAllowFlash(IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
 }
 //- FP5-280, Temporary bootloader unlock to flash images. liquan.zhou.t2m. 20230211
 
+//+FP4-492, root for user, liquan.zhou.t2m, 20210531
+#if 1
+STATIC VOID
+CmdEnableDebugRoot (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  Status = WriteRecoveryMessage (DEBUG_CMD_ROOT);
+  if (Status != EFI_SUCCESS) {
+    FastbootFail ("Failed to switch to debug-root mode");
+    return;
+  }
+  FastbootOkay ("");
+}
+#endif
+
+//+FP4-492, root for user, liquan.zhou.t2m, 20210531
+STATIC VOID
+CmdEnableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  if(!(strncmp(Arg, " all", 4))) {
+    Status = WriteRecoveryMessage (DEBUG_CMD_ALL);
+  } else if (!(strncmp(Arg, " ramdump", 8))) {
+    Status = WriteRecoveryMessage (DEBUG_CMD_RAMDUMP);
+  } 
+  #if 1
+  else if (!(strncmp(Arg, " root", 5))) {
+    Status = WriteRecoveryMessage (DEBUG_CMD_ROOT);
+  }
+  #endif
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
+  else if (!(strncmp(Arg, " uart", 5))) {
+    Status = WriteRecoveryMessage (DEBUG_CMD_UART);
+  }
+  //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
+  else {
+    FastbootFail ("Failed to set debug mode.");
+    return;
+  }
+  if (Status != EFI_SUCCESS) {
+    FastbootFail ("Failed to switch to debug mode");
+    return;
+  }
+  FastbootOkay ("");
+}
+
+STATIC VOID
+CmdDisableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  Status = WriteRecoveryMessage ("");
+  if (Status != EFI_SUCCESS) {
+    FastbootFail ("Failed to close to debug mode");
+    return;
+  }
+  FastbootOkay ("");
+}
+//-FP4-492, root for user, liquan.zhou.t2m, 20210531
+
+
 #if DYNAMIC_PARTITION_SUPPORT
 STATIC VOID
 CmdRebootRecovery (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
@@ -3751,6 +3814,14 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
 #ifdef DYNAMIC_PARTITION_SUPPORT
       {"reboot-recovery", CmdRebootRecovery},
       {"reboot-fastboot", CmdRebootFastboot},
+
+#if 1
+      {"oem enable-root", CmdEnableDebugRoot},
+#endif
+      {"oem disable-root", CmdDisableDebug},
+      //-FP4-492, root for user, liquan.zhou.t2m, 20210531
+      {"oem enable-debug", CmdEnableDebug},
+      {"oem disable-debug", CmdDisableDebug},
 #ifdef VIRTUAL_AB_OTA
       {"snapshot-update", CmdUpdateSnapshot},
 #endif
