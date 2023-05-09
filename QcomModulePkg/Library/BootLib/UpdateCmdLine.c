@@ -119,8 +119,10 @@ STATIC BOOLEAN IsUartEnable = FALSE;
 #else
 STATIC BOOLEAN IsUartEnable = TRUE;
 #endif
-STATIC CONST CHAR8 *MsmUartConfigCmdLine = " androidboot.uartflag=true console=ttyMSM0,115200,n8 androidboot.console=ttyMSM0";
-STATIC CONST CHAR8 *HslUartConfigCmdLine = " androidboot.uartflag=false console=ttyHSL0,115200,n8 androidboot.console=ttyHSL0";
+//STATIC CONST CHAR8 *MsmUartConfigCmdLine = " androidboot.uartflag=true console=ttyMSM0,115200,n8 androidboot.console=ttyMSM0";
+//STATIC CONST CHAR8 *HslUartConfigCmdLine = " androidboot.uartflag=false console=ttyHSL0,115200,n8 androidboot.console=ttyHSL0";
+STATIC CONST CHAR8 *MsmUartConfigCmdLine = " androidboot.uartflag=true";
+STATIC CONST CHAR8 *HslUartConfigCmdLine = " androidboot.uartflag=false";
 //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com end
 
 STATIC EFI_STATUS SetWifiMac( CHAR8  *Buffer)
