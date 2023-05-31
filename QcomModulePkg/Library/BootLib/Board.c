@@ -737,7 +737,7 @@ BoardSerialNum (CHAR8 *StrSerialNum, UINT32 Len)
         return Status;
       }*/
       SerialNo = CPU_SERIAL_NUM;
-      AsciiSPrint (StrSerialNum, Len, "%x", SerialNo);
+      AsciiSPrint (StrSerialNum, Len, "%08x", SerialNo);
     } else {
       AsciiSPrint (StrSerialNum, Len, "%x",
                    *(UINT32 *)CardInfoData.product_serial_num);
