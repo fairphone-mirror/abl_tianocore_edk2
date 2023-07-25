@@ -53,7 +53,11 @@
 #include "Board.h"
 #include "BootLinux.h"
 #include "LinuxLoaderLib.h"
+#if BUILD_ABL_WITH_RELEASEKEY
+#include "OEMPublicKey_R.h"
+#else
 #include "OEMPublicKey.h"
+#endif
 #include "PartitionTableUpdate.h"
 #include "avb_sysdeps.h"
 #include "libavb.h"

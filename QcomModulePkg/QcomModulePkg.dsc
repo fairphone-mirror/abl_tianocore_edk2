@@ -148,6 +148,9 @@
   !if $(BUILD_USES_RECOVERY_AS_BOOT)
       GCC:*_*_*_CC_FLAGS = -DBUILD_USES_RECOVERY_AS_BOOT
   !endif
+  !if $(BUILD_ABL_WITH_RELEASEKEY)
+      GCC:*_*_*_CC_FLAGS = -DBUILD_ABL_WITH_RELEASEKEY
+  !endif
   !ifdef $(INIT_BIN)
       GCC:*_*_*_CC_FLAGS = -DINIT_BIN='$(INIT_BIN)'
   !endif

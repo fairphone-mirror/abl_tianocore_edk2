@@ -1,3 +1,4 @@
 Build/
 tags/
 build_modulepkg.log
+QcomModulePkg/Library/avb/OEMPublicKey_R.h
