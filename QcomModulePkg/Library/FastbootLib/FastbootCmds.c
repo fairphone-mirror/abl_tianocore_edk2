@@ -118,6 +118,8 @@ found at
 #include "SparseFormat.h"
 #include "Recovery.h"
 
+#define T2M_DISABLE_DEBUG_FEATURE
+
 STATIC struct GetVarPartitionInfo part_info[] = {
     {"system", "partition-size:", "partition-type:", "", "ext4"},
     {"userdata", "partition-size:", "partition-type:", "", USERDATA_FS_TYPE},
@@ -2596,6 +2598,7 @@ CmdReboot (IN CONST CHAR8 *arg, IN VOID *data, IN UINT32 sz)
   FastbootFail ("Failed to reboot");
 }
 
+#ifndef T2M_DISABLE_DEBUG_FEATURE
 //+ FP5-280, Temporary bootloader unlock to flash images. liquan.zhou.t2m. 20230211
 STATIC VOID
 CmdOemAllowFlash(IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
@@ -2608,9 +2611,10 @@ CmdOemAllowFlash(IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
 //    FastbootFail ("Failed to allow flash");
 }
 //- FP5-280, Temporary bootloader unlock to flash images. liquan.zhou.t2m. 20230211
+#endif
 
 //+FP4-492, root for user, liquan.zhou.t2m, 20210531
-#if 1
+#ifndef T2M_DISABLE_DEBUG_FEATURE
 STATIC VOID
 CmdEnableDebugRoot (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
 {
@@ -2636,11 +2640,11 @@ CmdEnableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
   } else if (!(strncmp(Arg, " ramdump", 8))) {
     Status = WriteRecoveryMessage (DEBUG_CMD_RAMDUMP);
   } 
-  #if 1
+#ifndef T2M_DISABLE_DEBUG_FEATURE //FP5-2492, disable root feature on RC branch.
   else if (!(strncmp(Arg, " root", 5))) {
     Status = WriteRecoveryMessage (DEBUG_CMD_ROOT);
   }
-  #endif
+#endif
   //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
   else if (!(strncmp(Arg, " uart", 5))) {
     Status = WriteRecoveryMessage (DEBUG_CMD_UART);
@@ -3815,10 +3819,10 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
       {"reboot-recovery", CmdRebootRecovery},
       {"reboot-fastboot", CmdRebootFastboot},
 
-#if 1
+#ifndef T2M_DISABLE_DEBUG_FEATURE //FP5-2492, Disable root feature on RC branch
       {"oem enable-root", CmdEnableDebugRoot},
-#endif
       {"oem disable-root", CmdDisableDebug},
+#endif
       //-FP4-492, root for user, liquan.zhou.t2m, 20210531
       {"oem enable-debug", CmdEnableDebug},
       {"oem disable-debug", CmdDisableDebug},
@@ -3830,10 +3834,12 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
       {"getvar:", CmdGetVar},
       {"download:", CmdDownload},
       {"oem display-cmdline", CmdOemDisplayCommandLine},
+#ifndef T2M_DISABLE_DEBUG_FEATURE //FP5-2492, Disable temporary flash feature on RC branch.
       //+ FP5-280, Temporary bootloader unlock to flash images. liquan.zhou.t2m. 20230211
       {"oem allow-flash", CmdOemAllowFlash},
       {"oem unlock-flash", CmdOemAllowFlash},
       //- FP5-280, Temporary bootloader unlock to flash images. liquan.zhou.t2m. 20230211
+#endif
   };
 
   /* Register the commands only for non-user builds */
