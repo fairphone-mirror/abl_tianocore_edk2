@@ -324,7 +324,9 @@ ReadRollbackIndex (UINT32 Loc, UINT64 *RollbackIndex)
             Loc, ARRAY_SIZE (DevInfo.rollback_index)));
     return Status;
   }
-#ifdef USER_BUILD_VARIANT
+
+//FP4S-1035, ignore rollback_index info stored in devinfo. liquan.zhou.t2m, 20230812
+#if 0 //def USER_BUILD_VARIANT
   *RollbackIndex = DevInfo.rollback_index[Loc];
 #else
   //ignore rollback_index info stored in devinfo. liquan.zhou.t2m, 20210525
