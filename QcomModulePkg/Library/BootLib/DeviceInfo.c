@@ -314,6 +314,13 @@ EFI_STATUS DeviceInfoInit (VOID)
       DEBUG ((EFI_D_ERROR, "---------------is_charger_screen_enabled true --------\n"));
   DevInfo.is_charger_screen_enabled = TRUE;
 
+  //+ FP5-2571. No Bootloader version and Baseband version in fastboot mode. tianwen.zhang@t2mobile.com start
+  AsciiStrnCpyS (DevInfo.bootloader_version, MAX_VERSION_LEN, BOOTLOADER_VERSION,
+                   AsciiStrLen (BOOTLOADER_VERSION));
+
+  AsciiStrnCpyS (DevInfo.radio_version, MAX_VERSION_LEN, BASED_VERSION,
+                   AsciiStrLen (BASED_VERSION));
+  //+ FP5-2571. No Bootloader version and Baseband version in fastboot mode. tianwen.zhang@t2mobile.com end
   return Status;
 }
 
