@@ -137,7 +137,18 @@ else
 	CLANG35_GCC_TOOLCHAIN := $(ANDROID_TOP)/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-$(TARGET_GCC_VERSION)
 endif
 
-BOOTLOADER_VERSION := BOOTLOADER_VERSION=$(BUILD_NUMBER_FROM_FILE)
+version_path := version
+
+datetime := $(shell awk -F\- '{print $$2}' $(version_path)/build_datetime.h)
+display_version := $(shell awk -F\" '/BUILD_AP_VER/{print $$2}' $(version_path)/build_version.h)
+
+ifeq ($(TARGET_BUILD_VARIANT),user)
+    BUILD_DISPLAY_ID := FP5.$(BUILD_NUMBER_FROM_FILE).$(display_version).$(datetime)
+else
+    BUILD_DISPLAY_ID := FP5.$(BUILD_NUMBER_FROM_FILE).$(display_version)-userdebug.$(datetime)
+endif
+
+BOOTLOADER_VERSION := BOOTLOADER_VERSION=$(BUILD_DISPLAY_ID)
 BASED_VERSION := BASED_VERSION=13
 
 # ABL ELF output
