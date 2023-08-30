@@ -111,7 +111,7 @@ STATIC CONST CHAR8 *T2MDebugRootEnable = " androidboot.t2mdebugflag=true";
 EFI_STATUS HasT2MDebugFlag;
 //-FP4-492, root for user, liquan.zhou.t2m, 20210531
 t2m_debug_mode_t t2m_debug_mode = T2M_DEBUG_NONE;
-STATIC CONST CHAR8 *T2MDebugDownloadEnable = " msm_poweroff.t2m_download_enable=1";
+STATIC CONST CHAR8 *T2MDebugDownloadEnable = " qcom-dload-mode.t2m_download_enable=1";
 
 //[FP4S-945] Enable uart log in user variant tianwen.zhang@t2mobile.com start
 #ifdef USER_BUILD_VARIANT
