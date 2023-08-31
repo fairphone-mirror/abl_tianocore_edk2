@@ -73,6 +73,7 @@ STATIC MENU_MSG_INFO mFastbootOptionTitle[] = {
      OPTION_ITEM,
      0,
      POWEROFF},
+     /*
     {{"Boot to FFBM"},
      BIG_FACTOR,
      BGR_YELLOW,
@@ -87,6 +88,7 @@ STATIC MENU_MSG_INFO mFastbootOptionTitle[] = {
      OPTION_ITEM,
      0,
      QMMI},
+     */
 };
 
 STATIC MENU_MSG_INFO mFastbootCommonMsgInfo[] = {
