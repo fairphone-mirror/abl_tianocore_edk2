@@ -248,6 +248,9 @@ PowerKeyFunc (OPTION_MENU_INFO *MenuInfo)
   STATIC BOOLEAN IsRefresh;
 
   switch (MenuInfo->Info.MenuType) {
+  case DISPLAY_MENU_MURENA:
+      Reason = CONTINUE;
+      break;
   case DISPLAY_MENU_YELLOW:
   case DISPLAY_MENU_ORANGE:
     if (!IsRefresh) {
@@ -310,6 +313,10 @@ STATIC PAGES_ACTION MenuPagesAction[] = {
             {
                 NULL, NULL, PowerKeyFunc,
             },
+        [DISPLAY_MENU_MURENA] =
+            {
+                NULL, NULL, PowerKeyFunc,
+            },
         [DISPLAY_MENU_EIO] =
             {
                 NULL, NULL, PowerKeyFunc,
@@ -364,7 +371,8 @@ MenuKeysHandler (IN EFI_EVENT Event, IN VOID *Context)
       if ((MenuInfo->Info.MenuType == DISPLAY_MENU_EIO) ||
           ((MenuInfo->Info.MsgInfo->Action == POWEROFF) &&
            ((MenuInfo->Info.MenuType == DISPLAY_MENU_YELLOW) ||
-            (MenuInfo->Info.MenuType == DISPLAY_MENU_ORANGE))))
+            (MenuInfo->Info.MenuType == DISPLAY_MENU_ORANGE) ||
+            (MenuInfo->Info.MenuType == DISPLAY_MENU_MURENA))))
         ShutdownDevice ();
       return;
     }
