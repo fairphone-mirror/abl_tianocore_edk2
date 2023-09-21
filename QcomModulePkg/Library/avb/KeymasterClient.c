@@ -227,6 +227,7 @@ KeyMasterSetRotAndBootState (KMRotAndBootState *BootState)
 
   switch (BootState->Color) {
   case GREEN:
+  case MURENA:
   case YELLOW:
     avb_sha256_update (&RotCtx, (const uint8_t *)BootState->PublicKey,
                        BootState->PublicKeyLength);
@@ -248,6 +249,7 @@ KeyMasterSetRotAndBootState (KMRotAndBootState *BootState)
   /* Compute BootState digest */
   switch (BootState->Color) {
   case GREEN:
+  case MURENA:
   case YELLOW:
     avb_sha256_init (&BootStateCtx);
     avb_sha256_update (&BootStateCtx, (const uint8_t *)BootState->PublicKey,
