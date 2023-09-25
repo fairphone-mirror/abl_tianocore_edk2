@@ -355,7 +355,8 @@ AvbValidateVbmetaPublicKey(AvbOps *Ops, const uint8_t *PublicKeyData,
 	} else if (PublicKeyLength == ARRAY_SIZE(OEMPublicKeyMurena) &&
 	           CompareMem(PublicKeyData, OEMPublicKeyMurena, PublicKeyLength) == 0) {
 		*OutIsTrusted = true;
-		UserData->SystemType = 1;
+		//Controls whether to display a customized view
+		//UserData->SystemType = 1; 
 	} else {
 		*OutIsTrusted = false;
 		SetMem(UserData->PublicKey, ARRAY_SIZE(UserData->PublicKey), 0);
