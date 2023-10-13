@@ -249,17 +249,11 @@ struct AvbOps {
 
 };
 
-/*
- *modify by tianwen.zhang for FP5-2553
- *SystemType =1 : Murena
- */
-
 typedef struct {
     BOOLEAN IsUserKey;
     BOOLEAN IsMultiSlot;
     UINTN PublicKeyLen;
     CHAR8 PublicKey[MAX_USER_KEY_SIZE];
-    UINTN SystemType;
 } AvbOpsUserData;
 
 AvbOps *AvbOpsNew(VOID *UserData);

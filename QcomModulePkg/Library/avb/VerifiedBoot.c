@@ -1385,13 +1385,6 @@ LoadImageAndAuthVB2 (BootInfo *Info)
     }
   }
 
-  //add by tianwen.zhang@t2mobile.com FP5-2553 start
-  //BOOLEAN shouldDisplayCustomerWarming =  IsUnlocked ();
-  if (UserData->SystemType == 1) {
-      Info->BootState = MURENA;
-  }
-  //add by tianwen.zhang@t2mobile.com FP5-2553 end
-
   /* command line */
   GUARD_OUT (AppendVBCommonCmdLine (Info));
   GUARD_OUT (AppendVBCmdLine (Info, SlotData->cmdline));
@@ -1531,16 +1524,6 @@ DisplayVerifiedBootScreen (BootInfo *Info)
         MicroSecondDelay (5000000);
       }
     }
-    break;
-  case MURENA:
-      Status = DisplayVerifiedBootMenu (DISPLAY_MENU_MURENA);
-      if (Status == EFI_SUCCESS) {
-        WaitForExitKeysDetection ();
-      } else {
-        DEBUG (
-            (EFI_D_INFO, "Device is unlocked, Skipping boot verification\n"));
-        MicroSecondDelay (5000000);
-      }
     break;
   default:
     break;

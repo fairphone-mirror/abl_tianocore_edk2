@@ -202,43 +202,6 @@ STATIC WARNING_MENU_MSG_INFO mMenuMsgInfo[] = {
               COMMON,
               0,
               NOACTION}},
-            [DISPLAY_MENU_MURENA] =
-            {{{""},
-              BIG_FACTOR,
-              BGR_RED,
-              BGR_BLACK,
-              COMMON,
-              0,
-              NOACTION},
-             {{"\n\n\n\nThis software has been provided and signed by "
-               "Murena\n\n"},
-              COMMON_FACTOR,
-              BGR_WHITE,
-              BGR_BLACK,
-              COMMON,
-              0,
-              NOACTION},
-             {{"\n\n\n"},
-              COMMON_FACTOR,
-              BGR_RED,
-              BGR_BLACK,
-              COMMON,
-              0,
-              NOACTION},
-             {{"PRESS POWER KEY TO CONTINUE\n\n\n\n"},
-              COMMON_FACTOR,
-              BGR_WHITE,
-              BGR_BLACK,
-              ALIGN_LEFT,
-              0,
-              NOACTION},
-             {{""},
-              COMMON_FACTOR,
-              BGR_WHITE,
-              BGR_BLACK,
-              COMMON,
-              0,
-              NOACTION}},
 };
 
 STATIC MENU_MSG_INFO mOptionMenuMsgInfo[] = {
@@ -611,8 +574,6 @@ VerifiedBootMenuShowScreen (OPTION_MENU_INFO *OptionMenuInfo,
   /* Initialize the time out time */
   if (Type == DISPLAY_MENU_RED || Type == DISPLAY_MENU_EIO)
     OptionMenuInfo->Info.TimeoutTime = 30;
-  else if(Type == DISPLAY_MENU_MURENA)
-    OptionMenuInfo->Info.TimeoutTime = 5;
   else
     OptionMenuInfo->Info.TimeoutTime = 10;
 

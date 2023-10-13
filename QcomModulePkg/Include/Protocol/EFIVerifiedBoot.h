@@ -84,7 +84,6 @@ typedef enum _boot_state_t {
   ORANGE,
   YELLOW,
   RED,
-  MURENA,
   BOOT_STATE_MAX = (int)0xFFFFFFFFULL,
 } boot_state_t;
 
