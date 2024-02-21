@@ -2598,17 +2598,6 @@ CmdReboot (IN CONST CHAR8 *arg, IN VOID *data, IN UINT32 sz)
 
 //+FP4-2479, add debug function in bootloader for user release, liquan.zhou.t2m, 20210813
 STATIC VOID
-CmdOemAllowFlash(IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
-{
-    if(!(strncmp(Arg, " true", 5))) {
-        IsAllowFlashOem = TRUE;
-        FastbootOkay("");
-        return;
-    }
-    FastbootFail ("Failed to allow flash");
-}
-
-STATIC VOID
 CmdClearRollbackIndex (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
 {
   EFI_STATUS Status = EFI_SUCCESS;
@@ -2627,21 +2616,6 @@ CmdClearRollbackIndex (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
 }
 //-FP4-2479, add debug function in bootloader for user release, liquan.zhou.t2m, 20210813
 
-//+FP4-492, root for user, liquan.zhou.t2m, 20210531
-STATIC VOID
-CmdEnableDebugRoot (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
-{
-  EFI_STATUS Status = EFI_SUCCESS;
-
-  Status = WriteRecoveryMessage (DEBUG_CMD_ROOT);
-  if (Status != EFI_SUCCESS) {
-    FastbootFail ("Failed to switch to debug-root mode");
-    return;
-  }
-  FastbootOkay ("");
-}
-
-//+FP4-492, root for user, liquan.zhou.t2m, 20210531
 STATIC VOID
 CmdEnableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
 {
@@ -2651,8 +2625,6 @@ CmdEnableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
     Status = WriteRecoveryMessage (DEBUG_CMD_ALL);
   } else if (!(strncmp(Arg, " ramdump", 8))) {
     Status = WriteRecoveryMessage (DEBUG_CMD_RAMDUMP);
-  } else if (!(strncmp(Arg, " root", 5))) {
-    Status = WriteRecoveryMessage (DEBUG_CMD_ROOT);
   } else {
     FastbootFail ("Failed to set debug mode.");
     return;
@@ -2676,7 +2648,6 @@ CmdDisableDebug (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
   }
   FastbootOkay ("");
 }
-//-FP4-492, root for user, liquan.zhou.t2m, 20210531
 
 #if DYNAMIC_PARTITION_SUPPORT
 STATIC VOID
@@ -3796,7 +3767,6 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
       {"flashing unlock", CmdFlashingUnlock},
       {"flashing lock", CmdFlashingLock},
       //+FP4-2479, add debug function in bootloader for user release, liquan.zhou.t2m, 20210813
-      {"oem allow-flash", CmdOemAllowFlash},
       {"oem clear-rollback-index", CmdClearRollbackIndex},
       //-FP4-2479
 #endif
@@ -3824,10 +3794,6 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
 #ifdef DYNAMIC_PARTITION_SUPPORT
       {"reboot-recovery", CmdRebootRecovery},
       {"reboot-fastboot", CmdRebootFastboot},
-      //+FP4-492, root for user, liquan.zhou.t2m, 20210531
-      {"oem enable-root", CmdEnableDebugRoot},
-      {"oem disable-root", CmdDisableDebug},
-      //-FP4-492, root for user, liquan.zhou.t2m, 20210531
       {"oem enable-debug", CmdEnableDebug},
       {"oem disable-debug", CmdDisableDebug},
 #ifdef VIRTUAL_AB_OTA

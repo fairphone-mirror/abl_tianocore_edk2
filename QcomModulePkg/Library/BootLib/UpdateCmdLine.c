@@ -103,10 +103,7 @@ STATIC CHAR8 WifiMac[27] = {0};
 extern CHAR8 TraceabilityInfo[512];
 //-FP4-589, read wifi mac from traceability, liquan.zhou.t2m, 20210531
 
-//+FP4-492, root for user, liquan.zhou.t2m, 20210531
-STATIC CONST CHAR8 *T2MDebugRootEnable = " androidboot.t2mdebugflag=true";
 EFI_STATUS HasT2MDebugFlag;
-//-FP4-492, root for user, liquan.zhou.t2m, 20210531
 t2m_debug_mode_t t2m_debug_mode = T2M_DEBUG_NONE;
 STATIC CONST CHAR8 *T2MDebugDownloadEnable = " msm_poweroff.t2m_download_enable=1";
 
@@ -629,13 +626,7 @@ UpdateCmdLineParams (UpdateCmdLineParamList *Param,
   if (HasT2MDebugFlag == EFI_SUCCESS) {
     switch (t2m_debug_mode) {
       case T2M_DEBUG_ALL:
-        Src = T2MDebugRootEnable;
-        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
         Src = T2MDebugDownloadEnable;
-        AsciiStrCatS (Dst, MaxCmdLineLen, Src);
-        break;
-      case T2M_DEBUG_ROOT:
-        Src = T2MDebugRootEnable;
         AsciiStrCatS (Dst, MaxCmdLineLen, Src);
         break;
       case T2M_DEBUG_RAMDUMP:
@@ -882,11 +873,7 @@ Define  TARGET_BUILD_MMITEST in AndroidBoot.mk and makefile
     DEBUG ((EFI_D_VERBOSE, "T2M Debug cookie found.\n"));
     switch (t2m_debug_mode) {
       case T2M_DEBUG_ALL:
-        CmdLineLen += AsciiStrLen (T2MDebugRootEnable);
         CmdLineLen += AsciiStrLen (T2MDebugDownloadEnable);
-        break;
-      case T2M_DEBUG_ROOT:
-        CmdLineLen += AsciiStrLen (T2MDebugRootEnable);
         break;
       case T2M_DEBUG_RAMDUMP:
         CmdLineLen += AsciiStrLen (T2MDebugDownloadEnable);
