@@ -27,6 +27,7 @@ def _abl_impl(ctx):
       ROOT_DIR="$PWD"
       ABL_OUT_DIR=${{ROOT_DIR}}/bootable/bootloader/edk2/out
       CLANG_VERSION="{clang_version}"
+      BUILD_ID="{build_id}"
       CLANG_PREBUILT_BIN="prebuilts/clang/host/linux-x86/clang-$CLANG_VERSION/bin"
 
       # Stub out append_cmd
@@ -52,6 +53,8 @@ def _abl_impl(ctx):
         MKABL_ARGS+=("PREBUILT_HOST_TOOLS=${{PREBUILT_HOST_TOOLS}}")
         MKABL_ARGS+=("${{MAKE_FLAGS[@]}}")
         MKABL_ARGS+=("CLANG_BIN=${{ROOT_DIR}}/${{CLANG_PREBUILT_BIN}}/")
+        MKABL_ARGS+=("BUILD_ID=${{BUILD_ID}}")
+        MKABL_ARGS+=("BUILD_ID=${{BUILD_ID}}")
 
         echo "MAKING"
         make "${{MKABL_ARGS[@]}}"
@@ -71,6 +74,7 @@ def _abl_impl(ctx):
     """.format(
         kernel_build_config = ctx.file.kernel_build_config.path,
         clang_version = ctx.attr.clang_version,
+        build_id = ctx.attr.build_id[BuildSettingInfo].value,
     )
 
     for snippet in ctx.attr.extra_function_snippets:
@@ -193,7 +197,8 @@ abl = rule(
         "extra_function_snippets": attr.string_list(),
         "extra_post_gen_snippets": attr.string_list(),
         "extra_build_configs": attr.string_list(),
-        "clang_version": attr.string()
+        "clang_version": attr.string(),
+        "build_id": attr.label(default = ":build_id"),
     },
     toolchains = [
         hermetic_toolchain.type,

@@ -7,4 +7,9 @@ string_flag(
     build_setting_default = "userdebug",
 )
 
+string_flag(
+    name = "build_id",
+    build_setting_default = "build_unknown",
+)
+
 define_abl_targets()

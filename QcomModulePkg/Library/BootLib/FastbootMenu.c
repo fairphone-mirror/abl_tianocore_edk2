@@ -334,7 +334,6 @@ FastbootMenuShowScreen (OPTION_MENU_INFO *OptionMenuInfo)
   UINT32 i = 0;
   CHAR8 StrTemp[MAX_RSP_SIZE] = "";
   CHAR8 StrTemp1[MAX_RSP_SIZE] = "";
-  CHAR8 VersionTemp[MAX_VERSION_LEN] = "";
   UINT32 OptionTotal = ARRAY_SIZE (mFastbootOptionTitle);
 
   ZeroMem (&OptionMenuInfo->Info, sizeof (MENU_OPTION_ITEM_INFO));
@@ -384,18 +383,15 @@ FastbootMenuShowScreen (OPTION_MENU_INFO *OptionMenuInfo)
       break;
     case 3:
       /* Get bootloader version */
-      GetBootloaderVersion (VersionTemp, sizeof (VersionTemp));
       AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
-                     sizeof (mFastbootCommonMsgInfo[i].Msg), VersionTemp,
-                     sizeof (VersionTemp));
+        sizeof (mFastbootCommonMsgInfo[i].Msg), BUILD_ID,
+        AsciiStrLen (BUILD_ID));
       break;
     case 4:
       /* Get baseband version */
-      ZeroMem (VersionTemp, sizeof (VersionTemp));
-      GetRadioVersion (VersionTemp, sizeof (VersionTemp));
       AsciiStrnCatS (mFastbootCommonMsgInfo[i].Msg,
-                     sizeof (mFastbootCommonMsgInfo[i].Msg), VersionTemp,
-                     sizeof (VersionTemp));
+        sizeof (mFastbootCommonMsgInfo[i].Msg), BASE_VERSION,
+        AsciiStrLen (BASE_VERSION));
       break;
     case 5:
       /* Get serial number */
