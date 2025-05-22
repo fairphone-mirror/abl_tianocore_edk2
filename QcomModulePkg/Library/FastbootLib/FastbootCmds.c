@@ -95,6 +95,7 @@ found at
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/UnlockMenu.h>
 #include <Library/BootLinux.h>
+#include <Library/VerifiedBoot.h>
 #include <Uefi.h>
 
 #include <Guid/EventGroup.h>
@@ -117,6 +118,9 @@ found at
 #include "MetaFormat.h"
 #include "SparseFormat.h"
 #include "Recovery.h"
+
+/* As per libavh.h define */
+#define AVB_MAX_NUMBER_OF_ROLLBACK_INDEX_LOCATIONS 32
 
 STATIC struct GetVarPartitionInfo part_info[] = {
     {"system", "partition-size:", "partition-type:", "", "ext4"},
@@ -3302,6 +3306,8 @@ STATIC VOID
 CmdOemDevinfo (CONST CHAR8 *arg, VOID *data, UINT32 sz)
 {
   CHAR8 DeviceInfo[MAX_RSP_SIZE];
+  UINT32 RollbackIndexLocation;
+  UINT64 StoredRollbackIndex;
 
   AsciiSPrint (DeviceInfo, sizeof (DeviceInfo), "Verity mode: %a",
                IsEnforcing () ? "true" : "false");
@@ -3319,6 +3325,34 @@ CmdOemDevinfo (CONST CHAR8 *arg, VOID *data, UINT32 sz)
                IsChargingScreenEnable () ? "true" : "false");
   FastbootInfo (DeviceInfo);
   WaitForTransferComplete ();
+
+  for (RollbackIndexLocation = 0; RollbackIndexLocation < AVB_MAX_NUMBER_OF_ROLLBACK_INDEX_LOCATIONS; RollbackIndexLocation++) {
+    StoredRollbackIndex = GetStoredRollbackIndexForLocation(RollbackIndexLocation);
+    AsciiSPrint (DeviceInfo, sizeof (DeviceInfo), "Rollback index (%d): %ld",
+                 RollbackIndexLocation, StoredRollbackIndex);
+    FastbootInfo (DeviceInfo);
+    WaitForTransferComplete ();
+  }
+
+  FastbootOkay ("");
+}
+
+STATIC VOID
+CmdOemResetRollback (CONST CHAR8 *arg, VOID *data, UINT32 sz)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  if (!IsUnlocked()) {
+    FastbootFail ("Reset Rollback is not allowed in Lock State\n");
+    return;
+  }
+
+  Status = ResetStoredRollbackIndices ();
+  if (Status != EFI_SUCCESS) {
+    FastbootFail ("Could not reset stored rollback indices");
+    return;
+  }
+
   FastbootOkay ("");
 }
 
@@ -3765,6 +3799,7 @@ FastbootCommandSetup (IN VOID *Base, IN UINT64 Size)
       {"oem off-mode-charge", CmdOemOffModeCharger},
       {"oem select-display-panel", CmdOemSelectDisplayPanel},
       {"oem device-info", CmdOemDevinfo},
+      {"oem reset-rollback", CmdOemResetRollback},
       {"continue", CmdContinue},
       {"reboot", CmdReboot},
 #ifdef DYNAMIC_PARTITION_SUPPORT
