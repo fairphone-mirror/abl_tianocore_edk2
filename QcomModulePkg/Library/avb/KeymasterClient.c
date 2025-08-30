@@ -28,6 +28,7 @@
 #include "KeymasterClient.h"
 #include "VerifiedBoot.h"
 #include "libavb/libavb.h"
+#include "OEMPublicKey.h"
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/UefiBootServicesTableLib.h>
@@ -35,6 +36,8 @@
 #include <Protocol/EFIQseecom.h>
 #include <Protocol/LoadedImage.h>
 #include <Protocol/scm_sip_interface.h>
+
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
 typedef struct {
   QCOM_QSEECOM_PROTOCOL *QseeComProtocol;
@@ -228,8 +231,11 @@ KeyMasterSetRotAndBootState (KMRotAndBootState *BootState)
   switch (BootState->Color) {
   case GREEN:
   case YELLOW:
-    avb_sha256_update (&RotCtx, (const uint8_t *)BootState->PublicKey,
-                       BootState->PublicKeyLength);
+    /* Preserve RoT digest creation using the existing TestKey to ensure
+    userdata integrity and avoid tampering during decryption after OTA
+    upgrade. */
+    avb_sha256_update (&RotCtx, (const uint8_t *)OEMPublicTestKey,
+                       ARRAY_SIZE (OEMPublicTestKey));
     avb_sha256_update (&RotCtx, (const uint8_t *)&BootState->IsUnlocked,
                        sizeof (BootState->IsUnlocked));
     break;
