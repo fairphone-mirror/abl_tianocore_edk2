@@ -771,7 +771,7 @@ BoardHwPlatformName (CHAR8 *StrHwPlatform, UINT32 Len)
 {
   EFI_STATUS Status;
   EFI_CHIPINFO_PROTOCOL *pChipInfoProtocol;
-  UINT32 ChipIdValidLen = 4;
+  UINT32 ChipIdValidLen = 12;
 
   if (StrHwPlatform == NULL) {
     DEBUG ((EFI_D_ERROR, "Error: HW Platform string is NULL\n"));
