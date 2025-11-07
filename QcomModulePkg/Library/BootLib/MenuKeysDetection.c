@@ -101,12 +101,8 @@ VOID WaitForExitKeysDetection (VOID)
 STATIC VOID
 UpdateDeviceStatus (OPTION_MENU_INFO *MsgInfo, INTN Reason)
 {
-  MemCardType CardType = UNKNOWN;
-
   /* Clear the screen */
   gST->ConOut->ClearScreen (gST->ConOut);
-
-  CardType = CheckRootDeviceType ();
 
   switch (Reason) {
   case RECOVER:
