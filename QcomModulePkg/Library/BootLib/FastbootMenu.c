@@ -328,7 +328,7 @@ FastbootMenuShowScreen (OPTION_MENU_INFO *OptionMenuInfo)
       //+FP5-65. Displays device information in bootloader. liquan.zhou.t2m. 20230313
       /* Get IMEI */
       ZeroMem (StrTemp, sizeof (StrTemp));
-      AsciiSPrint(StrTemp, 15, "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c",
+      AsciiSPrint(StrTemp, 16, "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c",
                     TraceabilityInfo[36], TraceabilityInfo[37], TraceabilityInfo[38],
                     TraceabilityInfo[39], TraceabilityInfo[40], TraceabilityInfo[41],
                     TraceabilityInfo[42], TraceabilityInfo[43], TraceabilityInfo[44],
