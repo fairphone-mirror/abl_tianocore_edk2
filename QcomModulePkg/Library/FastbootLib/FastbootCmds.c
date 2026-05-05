@@ -45,38 +45,13 @@ found at
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following
- * license:
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted (subject to the limitations in the
- * disclaimer below) provided that the following conditions are met:
- * * Redistributions of source code must retain the above copyright
- *   notice, this list of conditions and the following disclaimer.
- * * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following
- * disclaimer in the documentation and/or other materials provided
- * with the distribution.
- * * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
- * contributors may be used to endorse or promote products derived
- * from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
- * GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
- * HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
- * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
 */
+/*
+ * Changes from Qualcomm Technologies, Inc. are provided under the
+ * following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -3227,6 +3202,82 @@ CmdOemDisplayCommandLine (CONST CHAR8 *Arg, VOID *Data, UINT32 Size)
   }
 }
 
+/*
+ * Input validation helpers for display panel override fastboot OEM command.
+ * These are intentionally permissive enough to support real panel naming
+ * conventions (e.g., prim:<panel>, :sec:<panel>, :sec0:<panel>) while blocking
+ * whitespace/control characters and common command-injection primitives.
+*/
+#define MAX_FASTBOOT_OEM_ARG_SCAN  (MAX_DISPLAY_PANEL_OVERRIDE)
+
+STATIC UINTN
+AsciiStrnLenSafe (IN CONST CHAR8 *Str,
+  IN UINTN MaxLen)
+{
+  UINTN i;
+
+  if (Str == NULL) {
+    return 0;
+  }
+
+  for (i = 0; i < MaxLen; i++) {
+    if (Str[i] == '\0') {
+      return i;
+    }
+  }
+
+  return MaxLen;
+}
+
+STATIC BOOLEAN
+IsValidPanelChar (IN CHAR8 c)
+{
+  if ((c >= 'a' && c <= 'z') ||
+      (c >= 'A' && c <= 'Z') ||
+      (c >= '0' && c <= '9')) {
+    return TRUE;
+  }
+
+  // Allow separators used in existing panel strings.
+  switch (c) {
+    case '_':
+    case '-':
+    case '.':
+    case ':':
+    case '/':
+    case ',':
+    case '@':
+    case '#':
+      return TRUE;
+    default:
+      return FALSE;
+  }
+}
+
+STATIC BOOLEAN
+IsValidPanelString (IN CONST CHAR8 *Str,
+  IN UINTN Len)
+{
+  UINTN i;
+
+  if (Str == NULL || Len == 0) {
+    return FALSE;
+  }
+
+  for (i = 0; i < Len; i++) {
+    // Reject whitespace and control characters outright.
+    if ((Str[i] <= 0x20) || (Str[i] == 0x7F)) {
+      return FALSE;
+    }
+
+    if (!IsValidPanelChar (Str[i])) {
+      return FALSE;
+    }
+  }
+
+  return TRUE;
+}
+
 STATIC VOID
 CmdOemSelectDisplayPanel (CONST CHAR8 *arg, VOID *data, UINT32 sz)
 {
@@ -3234,45 +3285,95 @@ CmdOemSelectDisplayPanel (CONST CHAR8 *arg, VOID *data, UINT32 sz)
   CHAR8 resp[MAX_RSP_SIZE] = "Selecting Panel: ";
   CHAR8 DisplayPanelStr[MAX_DISPLAY_PANEL_OVERRIDE] = "";
   CHAR8 DisplayPanelStrExist[MAX_DISPLAY_PANEL_OVERRIDE] = "";
-  INTN Pos = 0;
+  CONST CHAR8 *ArgTrim = NULL;
+  UINTN ArgTrimLen = 0;
   UINTN CurStrLen = 0;
+  UINTN ExistingLen = 0;
   UINTN TotalStrLen = 0;
   BOOLEAN Append = FALSE;
 
-  for (Pos = 0; Pos < AsciiStrLen (arg); Pos++) {
-    if (arg[Pos] == ' ') {
-      arg++;
-      Pos--;
-    } else if (arg[Pos] == ':') {
-      Append = TRUE;
-    } else {
-      break;
-    }
+  // Basic input validation
+  if (arg == NULL) {
+    AsciiStrnCatS (resp, sizeof (resp), ": invalid args", AsciiStrLen (": invalid args"));
+    FastbootFail (resp);
+    return;
+  }
+
+  // Trim leading spaces only (preserve a leading ':' used for append semantics)
+  ArgTrim = arg;
+  while (*ArgTrim == ' ') {
+    ArgTrim++;
+  }
+
+  // Enforce bounded length and NUL termination within scan limit
+  ArgTrimLen = AsciiStrnLenSafe (ArgTrim, MAX_FASTBOOT_OEM_ARG_SCAN);
+  if (ArgTrimLen == 0 || ArgTrimLen >= MAX_FASTBOOT_OEM_ARG_SCAN) {
+    AsciiStrnCatS (resp, sizeof (resp), ": invalid/too long", AsciiStrLen (": invalid/too long"));
+    FastbootFail (resp);
+    return;
+  }
+
+  // Validate content: allow-list characters, reject whitespace/control chars
+  if (!IsValidPanelString (ArgTrim, ArgTrimLen)) {
+    AsciiStrnCatS (resp, sizeof (resp), ": invalid panel", AsciiStrLen (": invalid panel"));
+    FastbootFail (resp);
+    return;
+  }
+
+  // Append mode if first non-space character is ':'
+  if (ArgTrim[0] == ':') {
+    Append = TRUE;
   }
 
   if (Append) {
-    CurStrLen = sizeof (DisplayPanelStrExist) / sizeof (CHAR8);
-
+    CurStrLen = sizeof (DisplayPanelStrExist);
     Status = DisplayGetVariable ((CHAR16 *)L"DisplayPanelOverride",
                                  (VOID *)DisplayPanelStrExist,
                                  &CurStrLen);
-    TotalStrLen = CurStrLen + AsciiStrLen (arg);
 
-    if ((EFI_SUCCESS == Status) &&
-        (0 != CurStrLen) &&
-        (TotalStrLen < MAX_DISPLAY_PANEL_OVERRIDE)) {
-      AsciiStrnCatS (DisplayPanelStr,
-                     MAX_DISPLAY_PANEL_OVERRIDE,
-                     DisplayPanelStrExist,
-                     CurStrLen);
-      DEBUG ((EFI_D_INFO, "existing panel name (%a)\n", DisplayPanelStr));
+    // Defensive NUL termination before bounded strlen
+    DisplayPanelStrExist[sizeof (DisplayPanelStrExist) - 1] = '\0';
+    ExistingLen = AsciiStrnLenSafe (DisplayPanelStrExist, sizeof (DisplayPanelStrExist));
+
+    // If variable read failed, we still allow setting only the provided value.
+    // But if the existing value is non-terminated/too long, fail rather than risk overflow.
+    if (!EFI_ERROR (Status) && ExistingLen > 0) {
+      if (ExistingLen >= MAX_DISPLAY_PANEL_OVERRIDE) {
+        AsciiStrnCatS (resp, sizeof (resp), ": existing too long", AsciiStrLen (": existing too long"));
+        FastbootFail (resp);
+        return;
+      }
+
+      TotalStrLen = ExistingLen + ArgTrimLen;
+      if (TotalStrLen >= MAX_DISPLAY_PANEL_OVERRIDE) {
+        AsciiStrnCatS (resp, sizeof (resp), ": too long", AsciiStrLen (": too long"));
+        FastbootFail (resp);
+        return;
+      }
+
+      Status = AsciiStrnCatS (DisplayPanelStr,
+                             MAX_DISPLAY_PANEL_OVERRIDE,
+                             DisplayPanelStrExist,
+                             ExistingLen);
+      if (EFI_ERROR (Status)) {
+        AsciiStrnCatS (resp, sizeof (resp), ": failed", AsciiStrLen (": failed"));
+        FastbootFail (resp);
+        return;
+      }
+
+      DEBUG ((EFI_D_INFO, "existing panel name (%a)", DisplayPanelStr));
     }
   }
 
-  AsciiStrnCatS (DisplayPanelStr,
-                 MAX_DISPLAY_PANEL_OVERRIDE,
-                 arg,
-                 AsciiStrLen (arg));
+  Status = AsciiStrnCatS (DisplayPanelStr,
+                         MAX_DISPLAY_PANEL_OVERRIDE,
+                         ArgTrim,
+                         ArgTrimLen);
+  if (EFI_ERROR (Status)) {
+    AsciiStrnCatS (resp, sizeof (resp), ": failed", AsciiStrLen (": failed"));
+    FastbootFail (resp);
+    return;
+  }
 
   /* Update the environment variable with the selected panel */
   Status = DisplaySetVariable ((CHAR16 *)L"DisplayPanelOverride",
